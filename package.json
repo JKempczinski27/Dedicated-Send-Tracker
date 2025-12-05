@@ -1,0 +1,29 @@
+{
+  "name": "nfl-injury-tracker",
+  "version": "2.0.0",
+  "description": "Comprehensive NFL player tracker with injury status, news sentiment, podcast mentions, and social media tracking",
+  "main": "injury-tracker.js",
+  "scripts": {
+    "start": "node injury-tracker.js",
+    "search": "node injury-tracker.js",
+    "track": "node enhanced-tracker.js",
+    "enhanced": "node enhanced-tracker.js"
+  },
+  "keywords": [
+    "nfl",
+    "injury",
+    "tracker",
+    "football",
+    "news",
+    "sentiment",
+    "podcast",
+    "reddit",
+    "youtube"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "sentiment": "^5.0.2"
+  }
+}
