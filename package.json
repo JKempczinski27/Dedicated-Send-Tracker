@@ -1,0 +1,21 @@
+{
+  "name": "nfl-injury-tracker",
+  "version": "1.0.0",
+  "description": "A straightforward tracker that updates NFL player injury status",
+  "main": "injury-tracker.js",
+  "scripts": {
+    "start": "node injury-tracker.js",
+    "search": "node injury-tracker.js"
+  },
+  "keywords": [
+    "nfl",
+    "injury",
+    "tracker",
+    "football"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.3.1"
+  }
+}
