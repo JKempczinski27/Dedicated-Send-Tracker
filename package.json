@@ -1,13 +1,15 @@
 {
   "name": "nfl-injury-tracker",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Comprehensive NFL player tracker with injury status, news sentiment, podcast mentions, and social media tracking",
   "main": "injury-tracker.js",
   "scripts": {
     "start": "node injury-tracker.js",
     "search": "node injury-tracker.js",
     "track": "node enhanced-tracker.js",
-    "enhanced": "node enhanced-tracker.js"
+    "enhanced": "node enhanced-tracker.js",
+    "dashboard": "node dashboard.js",
+    "html": "node html-dashboard.js"
   },
   "keywords": [
     "nfl",

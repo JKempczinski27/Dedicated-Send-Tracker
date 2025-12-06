@@ -4,6 +4,13 @@ A comprehensive JavaScript tracker that monitors NFL player injury statuses, tra
 
 ## Features
 
+### 📊 Player Watchlist Dashboard (NEW!)
+- Create a personalized watchlist of players to monitor
+- View all players at once with key metrics prominently displayed
+- Track injury status, sentiment scores, and social media mentions
+- Beautiful HTML dashboard with visual charts
+- Persistent storage - your watchlist is saved between sessions
+
 ### 🏈 Basic Injury Tracking
 - View all current NFL player injuries
 - Search for specific player injury status
@@ -102,6 +109,55 @@ This will display:
 - 📺 YouTube video coverage
 - 💬 Reddit discussions
 
+### Player Watchlist Dashboard
+
+**NEW!** Create a personalized dashboard to monitor multiple players at once:
+
+**Add players to your watchlist:**
+```bash
+npm run dashboard add "Patrick Mahomes"
+npm run dashboard add "Josh Allen"
+npm run dashboard add "Travis Kelce"
+```
+
+**View your dashboard:**
+```bash
+npm run dashboard
+```
+
+This displays all tracked players with:
+- 🏥 Injury status (healthy/injured with details)
+- 📰 News sentiment scores and national vs local comparison
+- 💬 Social media mention counts (podcasts, YouTube, Reddit)
+- 🕐 Last update timestamps
+
+**Dashboard Commands:**
+```bash
+npm run dashboard              # Update and show dashboard
+npm run dashboard add "Name"   # Add player to watchlist
+npm run dashboard remove "Name" # Remove player from watchlist
+npm run dashboard list         # List all tracked players
+npm run dashboard show         # Show cached data (no update)
+npm run dashboard update       # Force update all players
+npm run dashboard clear        # Clear entire watchlist
+```
+
+**Generate HTML Dashboard:**
+
+For a beautiful visual dashboard that opens in your browser:
+```bash
+npm run html
+```
+
+This creates `dashboard.html` with:
+- 🎨 Beautiful gradient design
+- 📊 Visual sentiment breakdown bars
+- 📈 National vs local comparison charts
+- 📱 Responsive layout
+- ⚡ Interactive hover effects
+
+Simply open the generated `dashboard.html` file in your web browser!
+
 ## Output Examples
 
 ### News Sentiment Analysis
@@ -154,12 +210,17 @@ This will display:
 .
 ├── injury-tracker.js          # Basic injury tracker (original)
 ├── enhanced-tracker.js        # Comprehensive multi-platform tracker
-├── news-tracker.js           # News API with sentiment analysis
-├── podcast-tracker.js        # RSS podcast feed monitor
-├── youtube-tracker.js        # YouTube video search
-├── reddit-tracker.js         # Reddit discussion tracker
-├── package.json              # Dependencies
-└── README.md                 # This file
+├── dashboard.js               # Player watchlist dashboard (CLI)
+├── html-dashboard.js          # HTML dashboard generator
+├── watchlist-manager.js       # Watchlist persistence manager
+├── news-tracker.js            # News API with sentiment analysis
+├── podcast-tracker.js         # RSS podcast feed monitor
+├── youtube-tracker.js         # YouTube video search
+├── reddit-tracker.js          # Reddit discussion tracker
+├── package.json               # Dependencies
+├── watchlist.json             # Your saved player watchlist (auto-generated)
+├── dashboard.html             # Visual HTML dashboard (auto-generated)
+└── README.md                  # This file
 ```
 
 ## API Information

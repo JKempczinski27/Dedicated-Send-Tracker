@@ -11,3 +11,7 @@ npm-debug.log*
 # OS files
 .DS_Store
 Thumbs.db
+
+# User-generated files
+watchlist.json
+dashboard.html
