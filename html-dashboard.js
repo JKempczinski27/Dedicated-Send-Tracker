@@ -27,7 +27,7 @@ class HTMLDashboard {
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f7fa;
             padding: 20px;
             min-height: 100vh;
         }
@@ -42,11 +42,12 @@ class HTMLDashboard {
             border-radius: 15px;
             padding: 30px;
             margin-bottom: 20px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-top: 4px solid #0a2463;
         }
 
         .header h1 {
-            color: #2d3748;
+            color: #0a2463;
             margin-bottom: 10px;
             font-size: 2.5em;
         }
@@ -58,12 +59,13 @@ class HTMLDashboard {
         }
 
         .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #0a2463;
             color: white;
             padding: 20px;
             border-radius: 10px;
             flex: 1;
             text-align: center;
+            box-shadow: 0 2px 10px rgba(10,36,99,0.15);
         }
 
         .stat-card h3 {
@@ -86,13 +88,15 @@ class HTMLDashboard {
             background: white;
             border-radius: 15px;
             padding: 25px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-left: 4px solid #0a2463;
             transition: transform 0.2s, box-shadow 0.2s;
         }
 
         .player-card:hover {
             transform: translateY(-5px);
-            box-shadow: 0 15px 50px rgba(0,0,0,0.15);
+            box-shadow: 0 8px 30px rgba(10,36,99,0.15);
+            border-left-color: #dc2626;
         }
 
         .player-header {
@@ -101,13 +105,13 @@ class HTMLDashboard {
             align-items: center;
             margin-bottom: 20px;
             padding-bottom: 15px;
-            border-bottom: 2px solid #e2e8f0;
+            border-bottom: 2px solid #e5e7eb;
         }
 
         .player-name {
             font-size: 1.5em;
             font-weight: bold;
-            color: #2d3748;
+            color: #0a2463;
         }
 
         .injury-badge {
@@ -118,12 +122,12 @@ class HTMLDashboard {
         }
 
         .injury-badge.healthy {
-            background: #48bb78;
+            background: #10b981;
             color: white;
         }
 
         .injury-badge.injured {
-            background: #f56565;
+            background: #dc2626;
             color: white;
         }
 
@@ -134,22 +138,22 @@ class HTMLDashboard {
         .section-title {
             font-size: 0.9em;
             font-weight: bold;
-            color: #718096;
+            color: #0a2463;
             margin-bottom: 8px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
         .injury-details {
-            background: #fff5f5;
-            border-left: 4px solid #f56565;
+            background: #fef2f2;
+            border-left: 4px solid #dc2626;
             padding: 12px;
             border-radius: 5px;
         }
 
         .injury-details p {
             margin: 5px 0;
-            color: #2d3748;
+            color: #374151;
         }
 
         .sentiment-bar {
@@ -161,7 +165,7 @@ class HTMLDashboard {
         }
 
         .sentiment-positive {
-            background: #48bb78;
+            background: #10b981;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -171,7 +175,7 @@ class HTMLDashboard {
         }
 
         .sentiment-neutral {
-            background: #ecc94b;
+            background: #6b7280;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -181,7 +185,7 @@ class HTMLDashboard {
         }
 
         .sentiment-negative {
-            background: #f56565;
+            background: #dc2626;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -197,15 +201,15 @@ class HTMLDashboard {
         }
 
         .sentiment-score.positive {
-            color: #48bb78;
+            color: #10b981;
         }
 
         .sentiment-score.neutral {
-            color: #ecc94b;
+            color: #6b7280;
         }
 
         .sentiment-score.negative {
-            color: #f56565;
+            color: #dc2626;
         }
 
         .comparison {
@@ -216,15 +220,16 @@ class HTMLDashboard {
 
         .comparison-item {
             flex: 1;
-            background: #f7fafc;
+            background: #f9fafb;
             padding: 10px;
             border-radius: 5px;
             text-align: center;
+            border: 1px solid #e5e7eb;
         }
 
         .comparison-item strong {
             display: block;
-            color: #4a5568;
+            color: #6b7280;
             font-size: 0.8em;
             margin-bottom: 5px;
         }
@@ -232,7 +237,7 @@ class HTMLDashboard {
         .comparison-item span {
             font-size: 1.3em;
             font-weight: bold;
-            color: #2d3748;
+            color: #0a2463;
         }
 
         .mentions {
@@ -241,28 +246,29 @@ class HTMLDashboard {
         }
 
         .mention-badge {
-            background: #edf2f7;
+            background: #f9fafb;
             padding: 10px 15px;
             border-radius: 5px;
             text-align: center;
             flex: 1;
+            border: 1px solid #e5e7eb;
         }
 
         .mention-badge strong {
             display: block;
             font-size: 1.5em;
-            color: #667eea;
+            color: #dc2626;
             margin-bottom: 3px;
         }
 
         .mention-badge span {
             font-size: 0.8em;
-            color: #718096;
+            color: #6b7280;
         }
 
         .last-updated {
             text-align: center;
-            color: #718096;
+            color: #6b7280;
             margin-top: 20px;
             font-size: 0.9em;
         }
@@ -270,7 +276,7 @@ class HTMLDashboard {
         .no-data {
             text-align: center;
             padding: 40px;
-            color: #718096;
+            color: #6b7280;
         }
 
         .empty-state {
@@ -278,24 +284,25 @@ class HTMLDashboard {
             border-radius: 15px;
             padding: 60px;
             text-align: center;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-top: 4px solid #0a2463;
         }
 
         .empty-state h2 {
-            color: #2d3748;
+            color: #0a2463;
             margin-bottom: 10px;
         }
 
         .empty-state p {
-            color: #718096;
+            color: #6b7280;
             line-height: 1.6;
         }
 
         .empty-state code {
-            background: #edf2f7;
+            background: #f3f4f6;
             padding: 2px 6px;
             border-radius: 3px;
-            color: #667eea;
+            color: #dc2626;
         }
     </style>
 </head>
