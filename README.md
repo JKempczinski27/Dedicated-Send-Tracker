@@ -4,12 +4,22 @@ A comprehensive JavaScript tracker that monitors NFL player injury statuses, tra
 
 ## Features
 
-### 📊 Player Watchlist Dashboard (NEW!)
+### 🌐 Web Dashboard - Deploy to Vercel! (NEW!)
+- **Access from anywhere** - Deploy to Vercel for a live web app
+- Real-time updates when you visit the page
+- Add/remove players directly from the web interface
+- Serverless API routes handle all data fetching securely
+- Professional navy blue, white, and red design
+- Mobile responsive
+- See [DEPLOY.md](DEPLOY.md) for deployment guide
+
+### 📊 Player Watchlist Dashboard
 - Create a personalized watchlist of players to monitor
 - View all players at once with key metrics prominently displayed
 - Track injury status, sentiment scores, and social media mentions
 - Beautiful HTML dashboard with visual charts
 - Persistent storage - your watchlist is saved between sessions
+- Available as CLI, static HTML, or web app
 
 ### 🏈 Basic Injury Tracking
 - View all current NFL player injuries
@@ -77,7 +87,36 @@ NEWS_API_KEY=your_news_api_key
 
 ## Usage
 
-### Basic Injury Tracker
+### Web Dashboard (Recommended for Easy Access)
+
+**Deploy to Vercel for web access from any device:**
+
+```bash
+# Install Vercel CLI
+npm install -g vercel
+
+# Deploy
+vercel
+
+# Set environment variables
+vercel env add NFL_API_KEY
+vercel env add YOUTUBE_API_KEY  # Optional
+vercel env add NEWS_API_KEY     # Optional
+
+# Deploy to production
+vercel --prod
+```
+
+Your dashboard will be live at `https://your-project-name.vercel.app`
+
+**For detailed deployment instructions, see [DEPLOY.md](DEPLOY.md)**
+
+**Local development:**
+```bash
+npm run dev  # Open http://localhost:3000
+```
+
+### Basic Injury Tracker (CLI)
 
 View all injuries:
 ```bash
@@ -208,18 +247,31 @@ Simply open the generated `dashboard.html` file in your web browser!
 
 ```
 .
-├── injury-tracker.js          # Basic injury tracker (original)
+├── pages/                     # Next.js pages (web app)
+│   ├── index.js              # Main web dashboard page
+│   ├── _app.js               # Next.js app wrapper
+│   └── api/                  # Serverless API routes
+│       ├── watchlist.js      # Get watchlist endpoint
+│       ├── update-all.js     # Update all players endpoint
+│       └── watchlist/
+│           ├── add.js        # Add player endpoint
+│           └── remove.js     # Remove player endpoint
+├── styles/
+│   └── globals.css           # Global CSS styles
+├── injury-tracker.js          # Basic CLI injury tracker
 ├── enhanced-tracker.js        # Comprehensive multi-platform tracker
 ├── dashboard.js               # Player watchlist dashboard (CLI)
-├── html-dashboard.js          # HTML dashboard generator
+├── html-dashboard.js          # Static HTML dashboard generator
 ├── watchlist-manager.js       # Watchlist persistence manager
 ├── news-tracker.js            # News API with sentiment analysis
 ├── podcast-tracker.js         # RSS podcast feed monitor
 ├── youtube-tracker.js         # YouTube video search
 ├── reddit-tracker.js          # Reddit discussion tracker
-├── package.json               # Dependencies
-├── watchlist.json             # Your saved player watchlist (auto-generated)
-├── dashboard.html             # Visual HTML dashboard (auto-generated)
+├── package.json               # Dependencies & scripts
+├── vercel.json                # Vercel deployment config
+├── DEPLOY.md                  # Deployment guide
+├── watchlist.json             # Saved player watchlist (auto-generated)
+├── dashboard.html             # Static HTML dashboard (auto-generated)
 └── README.md                  # This file
 ```
 
