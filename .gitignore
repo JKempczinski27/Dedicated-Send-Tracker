@@ -15,3 +15,8 @@ Thumbs.db
 # User-generated files
 watchlist.json
 dashboard.html
+
+# Next.js
+.next/
+out/
+.vercel
