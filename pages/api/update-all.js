@@ -1,4 +1,4 @@
-const WatchlistManager = require('../../watchlist-manager');
+const KVWatchlistManager = require('../../kv-watchlist-manager');
 const EnhancedTracker = require('../../enhanced-tracker');
 
 // Increase timeout for Vercel serverless function
@@ -12,8 +12,8 @@ export default async function handler(req, res) {
   }
 
   try {
-    const watchlist = new WatchlistManager();
-    const players = watchlist.getPlayers();
+    const watchlist = new KVWatchlistManager();
+    const players = await watchlist.getPlayers();
 
     if (players.length === 0) {
       return res.status(200).json({
@@ -30,7 +30,7 @@ export default async function handler(req, res) {
       try {
         console.log(`Tracking ${player.name}...`);
         const data = await tracker.trackPlayer(player.name);
-        watchlist.updatePlayerData(player.name, data);
+        await watchlist.updatePlayerData(player.name, data);
         updatedPlayers.push(player.name);
 
         // Add delay to avoid rate limiting (except for last player)
@@ -43,9 +43,10 @@ export default async function handler(req, res) {
       }
     }
 
+    const updatedPlayersList = await watchlist.getPlayers();
     res.status(200).json({
       message: `Updated ${updatedPlayers.length} of ${players.length} players`,
-      players: watchlist.getPlayers(),
+      players: updatedPlayersList,
       updatedPlayers
     });
   } catch (error) {

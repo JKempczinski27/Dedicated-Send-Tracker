@@ -1,6 +1,6 @@
-const WatchlistManager = require('../../../watchlist-manager');
+const KVWatchlistManager = require('../../../kv-watchlist-manager');
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -12,11 +12,12 @@ export default function handler(req, res) {
       return res.status(400).json({ error: 'Player name is required' });
     }
 
-    const watchlist = new WatchlistManager();
-    const result = watchlist.removePlayer(playerName.trim());
+    const watchlist = new KVWatchlistManager();
+    const result = await watchlist.removePlayer(playerName.trim());
 
     if (result.success) {
-      res.status(200).json({ message: result.message, players: watchlist.getPlayers() });
+      const players = await watchlist.getPlayers();
+      res.status(200).json({ message: result.message, players });
     } else {
       res.status(404).json({ error: result.message });
     }
