@@ -48,6 +48,24 @@ NEWS_API_KEY=your_news_api_key (optional)
 2. Wait for the build to complete
 3. Your app will be live at `https://your-project-name.vercel.app`
 
+### Step 5: Set Up Vercel KV (Required for Persistent Storage)
+
+**IMPORTANT:** Your watchlist needs Vercel KV to persist data permanently.
+
+1. In your Vercel project, go to the **"Storage"** tab
+2. Click **"Create Database"**
+3. Select **"KV"** (Key-Value Store)
+4. Name it `nfl-tracker-kv` (or any name you prefer)
+5. Choose a region close to you
+6. Click **"Create"**
+7. Click **"Connect to Project"**
+8. Select your NFL Tracker project
+9. Check all environments (Production, Preview, Development)
+10. Click **"Connect"**
+11. **Redeploy your app** from the Deployments tab
+
+**For detailed KV setup instructions, see [VERCEL-KV-SETUP.md](VERCEL-KV-SETUP.md)**
+
 ## Method 2: Deploy via Vercel CLI (Recommended for Developers)
 
 ### Step 1: Install Vercel CLI

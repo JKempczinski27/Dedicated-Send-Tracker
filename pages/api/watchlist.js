@@ -1,19 +1,19 @@
-const WatchlistManager = require('../../watchlist-manager');
+const KVWatchlistManager = require('../../kv-watchlist-manager');
 
-export default function handler(req, res) {
+export default async function handler(req, res) {
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    const watchlist = new WatchlistManager();
-    const players = watchlist.getPlayers();
-    const stats = watchlist.getStats();
+    const watchlist = new KVWatchlistManager();
+    const players = await watchlist.getPlayers();
+    const stats = await watchlist.getStats();
 
     res.status(200).json({
       players,
       stats,
-      lastUpdated: watchlist.watchlist.lastUpdated
+      lastUpdated: stats.lastUpdated
     });
   } catch (error) {
     console.error('Error fetching watchlist:', error);

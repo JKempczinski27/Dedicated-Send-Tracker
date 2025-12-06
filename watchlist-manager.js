@@ -3,7 +3,10 @@ const path = require('path');
 
 class WatchlistManager {
     constructor() {
-        this.watchlistFile = path.join(__dirname, 'watchlist.json');
+        // Use /tmp directory on Vercel (serverless), project directory locally
+        const isVercel = process.env.VERCEL === '1' || process.env.VERCEL_ENV;
+        const baseDir = isVercel ? '/tmp' : __dirname;
+        this.watchlistFile = path.join(baseDir, 'watchlist.json');
         this.watchlist = this.loadWatchlist();
     }
 
