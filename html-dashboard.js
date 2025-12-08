@@ -26,311 +26,250 @@ class HTMLDashboard {
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f7fa;
-            padding: 20px;
-            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8f9fa;
+            padding: 15px;
+            font-size: 12px;
+            color: #333;
         }
 
         .container {
-            max-width: 1400px;
+            max-width: 100%;
             margin: 0 auto;
+            background: white;
+            border: 1px solid #dee2e6;
         }
 
         .header {
-            background: white;
-            border-radius: 15px;
-            padding: 30px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-top: 4px solid #0a2463;
+            background: #0a2463;
+            color: white;
+            padding: 12px 20px;
+            border-bottom: 3px solid #dc2626;
         }
 
         .header h1 {
-            color: #0a2463;
-            margin-bottom: 10px;
-            font-size: 2.5em;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 4px;
         }
 
-        .stats {
-            display: flex;
-            gap: 20px;
-            margin-top: 20px;
-        }
-
-        .stat-card {
-            background: #0a2463;
-            color: white;
-            padding: 20px;
-            border-radius: 10px;
-            flex: 1;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(10,36,99,0.15);
-        }
-
-        .stat-card h3 {
-            font-size: 2em;
-            margin-bottom: 5px;
-        }
-
-        .stat-card p {
+        .header-subtitle {
+            font-size: 11px;
             opacity: 0.9;
-            font-size: 0.9em;
         }
 
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-            gap: 20px;
-        }
-
-        .player-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-left: 4px solid #0a2463;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .player-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(10,36,99,0.15);
-            border-left-color: #dc2626;
-        }
-
-        .player-header {
+        .stats-bar {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid #e5e7eb;
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 8px 20px;
+            gap: 30px;
+        }
+
+        .stat-item {
+            font-size: 11px;
+        }
+
+        .stat-item strong {
+            color: #0a2463;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+        }
+
+        thead {
+            background: #f1f3f5;
+            border-bottom: 2px solid #0a2463;
+        }
+
+        th {
+            padding: 8px 10px;
+            text-align: left;
+            font-weight: 600;
+            color: #0a2463;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            border-right: 1px solid #dee2e6;
+        }
+
+        th:last-child {
+            border-right: none;
+        }
+
+        tbody tr {
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        tbody tr:nth-child(even):hover {
+            background: #f1f3f5;
+        }
+
+        td {
+            padding: 6px 10px;
+            border-right: 1px solid #e9ecef;
+            vertical-align: top;
+        }
+
+        td:last-child {
+            border-right: none;
         }
 
         .player-name {
-            font-size: 1.5em;
-            font-weight: bold;
+            font-weight: 600;
             color: #0a2463;
+            font-size: 12px;
         }
 
-        .injury-badge {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-weight: bold;
-            font-size: 0.85em;
-        }
-
-        .injury-badge.healthy {
-            background: #10b981;
-            color: white;
-        }
-
-        .injury-badge.injured {
-            background: #dc2626;
-            color: white;
-        }
-
-        .section {
-            margin-bottom: 20px;
-        }
-
-        .section-title {
-            font-size: 0.9em;
-            font-weight: bold;
-            color: #0a2463;
-            margin-bottom: 8px;
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 600;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
 
-        .injury-details {
-            background: #fef2f2;
-            border-left: 4px solid #dc2626;
-            padding: 12px;
-            border-radius: 5px;
+        .status-healthy {
+            background: #d4edda;
+            color: #155724;
         }
 
-        .injury-details p {
-            margin: 5px 0;
-            color: #374151;
+        .status-injured {
+            background: #f8d7da;
+            color: #721c24;
         }
 
-        .sentiment-bar {
-            display: flex;
-            height: 30px;
-            border-radius: 5px;
-            overflow: hidden;
-            margin-bottom: 10px;
-        }
-
-        .sentiment-positive {
-            background: #10b981;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .sentiment-neutral {
-            background: #6b7280;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-
-        .sentiment-negative {
-            background: #dc2626;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 0.8em;
-            font-weight: bold;
+        .injury-detail {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
         }
 
         .sentiment-score {
-            font-size: 1.5em;
-            font-weight: bold;
-            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 11px;
         }
 
-        .sentiment-score.positive {
-            color: #10b981;
+        .sentiment-positive {
+            color: #28a745;
         }
 
-        .sentiment-score.neutral {
-            color: #6b7280;
+        .sentiment-neutral {
+            color: #6c757d;
         }
 
-        .sentiment-score.negative {
+        .sentiment-negative {
             color: #dc2626;
         }
 
+        .sentiment-breakdown {
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
+        }
+
         .comparison {
-            display: flex;
-            gap: 15px;
-            margin-top: 10px;
-        }
-
-        .comparison-item {
-            flex: 1;
-            background: #f9fafb;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            border: 1px solid #e5e7eb;
-        }
-
-        .comparison-item strong {
-            display: block;
-            color: #6b7280;
-            font-size: 0.8em;
-            margin-bottom: 5px;
-        }
-
-        .comparison-item span {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #0a2463;
+            font-size: 10px;
+            color: #666;
+            margin-top: 2px;
         }
 
         .mentions {
             display: flex;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
-        .mention-badge {
-            background: #f9fafb;
-            padding: 10px 15px;
-            border-radius: 5px;
-            text-align: center;
-            flex: 1;
-            border: 1px solid #e5e7eb;
+        .mention-item {
+            font-size: 10px;
         }
 
-        .mention-badge strong {
-            display: block;
-            font-size: 1.5em;
+        .mention-count {
+            font-weight: 600;
             color: #dc2626;
-            margin-bottom: 3px;
         }
 
-        .mention-badge span {
-            font-size: 0.8em;
-            color: #6b7280;
-        }
-
-        .last-updated {
-            text-align: center;
-            color: #6b7280;
-            margin-top: 20px;
-            font-size: 0.9em;
+        .timestamp {
+            font-size: 10px;
+            color: #6c757d;
         }
 
         .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #6b7280;
+            color: #6c757d;
+            font-style: italic;
+            font-size: 10px;
+        }
+
+        .footer {
+            padding: 8px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #dee2e6;
+            font-size: 10px;
+            color: #6c757d;
+            text-align: right;
         }
 
         .empty-state {
-            background: white;
-            border-radius: 15px;
-            padding: 60px;
+            padding: 40px;
             text-align: center;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-top: 4px solid #0a2463;
+            color: #6c757d;
         }
 
         .empty-state h2 {
+            font-size: 14px;
             color: #0a2463;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
 
         .empty-state p {
-            color: #6b7280;
-            line-height: 1.6;
+            font-size: 11px;
         }
 
-        .empty-state code {
-            background: #f3f4f6;
-            padding: 2px 6px;
-            border-radius: 3px;
-            color: #dc2626;
+        @media print {
+            body {
+                padding: 0;
+            }
+            .container {
+                border: none;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🏈 NFL Player Tracking Dashboard</h1>
-            <p style="color: #718096; margin-top: 10px;">Monitor injury status, news sentiment, and social media mentions</p>
-            <div class="stats">
-                <div class="stat-card">
-                    <h3>${stats.total}</h3>
-                    <p>Total Players</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${stats.injured}</h3>
-                    <p>Currently Injured</p>
-                </div>
-                <div class="stat-card">
-                    <h3>${stats.healthy}</h3>
-                    <p>Healthy</p>
-                </div>
-            </div>
+            <h1>NFL Player Tracking Dashboard</h1>
+            <div class="header-subtitle">Real-time injury status, news sentiment analysis, and social media monitoring</div>
         </div>
 
-        ${players.length === 0 ? this._generateEmptyState() : this._generatePlayerCards(players)}
+        <div class="stats-bar">
+            <div class="stat-item"><strong>Total Players:</strong> ${stats.total}</div>
+            <div class="stat-item"><strong>Currently Injured:</strong> ${stats.injured}</div>
+            <div class="stat-item"><strong>Healthy:</strong> ${stats.healthy}</div>
+            <div class="stat-item"><strong>Last Updated:</strong> ${stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Never'}</div>
+        </div>
 
-        <div class="last-updated">
-            Last Updated: ${stats.lastUpdated ? new Date(stats.lastUpdated).toLocaleString() : 'Never'}
+        ${players.length === 0 ? this._generateEmptyState() : this._generateTable(players)}
+
+        <div class="footer">
+            Generated: ${new Date().toLocaleString()} | NFL Player Tracking System
         </div>
     </div>
 </body>
@@ -342,147 +281,109 @@ class HTMLDashboard {
     _generateEmptyState() {
         return `
         <div class="empty-state">
-            <h2>Your watchlist is empty</h2>
-            <p>Add players to start tracking their injury status and media coverage.</p>
-            <p style="margin-top: 20px;">
-                Run: <code>npm run dashboard add "Player Name"</code>
-            </p>
+            <h2>No Players on Watchlist</h2>
+            <p>Add players using: <code>npm run dashboard add "Player Name"</code></p>
         </div>
         `;
     }
 
-    _generatePlayerCards(players) {
-        return `<div class="grid">\n${players.map(player => this._generatePlayerCard(player)).join('\n')}\n</div>`;
+    _generateTable(players) {
+        return `
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Player Name</th>
+                        <th style="width: 12%;">Injury Status</th>
+                        <th style="width: 18%;">Injury Details</th>
+                        <th style="width: 20%;">News Sentiment</th>
+                        <th style="width: 15%;">Source Comparison</th>
+                        <th style="width: 12%;">Social Media</th>
+                        <th style="width: 8%;">Last Updated</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${players.map(player => this._generateTableRow(player)).join('')}
+                </tbody>
+            </table>
+        </div>
+        `;
     }
 
-    _generatePlayerCard(player) {
+    _generateTableRow(player) {
         const data = player.cachedData;
         const hasData = data && player.lastChecked;
 
         if (!hasData) {
             return `
-            <div class="player-card">
-                <div class="player-header">
-                    <div class="player-name">${player.name}</div>
-                </div>
-                <div class="no-data">
-                    ⚠️ No data available<br>
-                    <small>Run dashboard update to fetch data</small>
-                </div>
-            </div>
+            <tr>
+                <td class="player-name">${player.name}</td>
+                <td colspan="6" class="no-data">No data available - run dashboard update</td>
+            </tr>
             `;
         }
 
         const isInjured = !!data.injury;
-        const injurySection = this._generateInjurySection(data.injury);
-        const newsSection = this._generateNewsSection(data.news);
-        const mentionsSection = this._generateMentionsSection(data);
-
-        return `
-        <div class="player-card">
-            <div class="player-header">
-                <div class="player-name">${player.name}</div>
-                <div class="injury-badge ${isInjured ? 'injured' : 'healthy'}">
-                    ${isInjured ? '⚠️ INJURED' : '✅ HEALTHY'}
-                </div>
-            </div>
-
-            ${injurySection}
-            ${newsSection}
-            ${mentionsSection}
-
-            <p style="color: #718096; font-size: 0.85em; margin-top: 15px;">
-                Last checked: ${new Date(player.lastChecked).toLocaleString()}
-            </p>
-        </div>
-        `;
-    }
-
-    _generateInjurySection(injury) {
-        if (!injury) return '';
-
-        return `
-        <div class="section">
-            <div class="section-title">🏥 Injury Details</div>
-            <div class="injury-details">
-                <p><strong>Team:</strong> ${injury.Team}</p>
-                <p><strong>Position:</strong> ${injury.Position}</p>
-                <p><strong>Injury:</strong> ${injury.BodyPart || 'N/A'}</p>
-                <p><strong>Status:</strong> ${injury.Status || 'Unknown'}</p>
-                ${injury.Updated ? `<p><strong>Updated:</strong> ${injury.Updated}</p>` : ''}
-            </div>
-        </div>
-        `;
-    }
-
-    _generateNewsSection(newsData) {
-        if (!newsData || !newsData.analysis) {
-            return '<div class="section"><div class="section-title">📰 News Sentiment</div><p style="color: #718096;">No news data available</p></div>';
-        }
-
-        const analysis = newsData.analysis;
-        const sentimentClass = analysis.overallSentiment.score > 0 ? 'positive' : analysis.overallSentiment.score < 0 ? 'negative' : 'neutral';
-
-        let comparisonHTML = '';
-        if (analysis.sourceComparison.national.count > 0 && analysis.sourceComparison.local.count > 0) {
-            comparisonHTML = `
-            <div class="comparison">
-                <div class="comparison-item">
-                    <strong>National</strong>
-                    <span>${analysis.sourceComparison.national.avgSentiment}</span>
-                </div>
-                <div class="comparison-item">
-                    <strong>Local</strong>
-                    <span>${analysis.sourceComparison.local.avgSentiment}</span>
-                </div>
-                <div class="comparison-item">
-                    <strong>Difference</strong>
-                    <span>${analysis.sourceComparison.difference}</span>
-                </div>
-            </div>
-            `;
-        }
-
-        return `
-        <div class="section">
-            <div class="section-title">📰 News Sentiment Analysis</div>
-            <div class="sentiment-score ${sentimentClass}">
-                ${analysis.overallSentiment.label} (${analysis.overallSentiment.score})
-            </div>
-            <div class="sentiment-bar">
-                ${analysis.breakdown.positive.percentage > 0 ? `<div class="sentiment-positive" style="width: ${analysis.breakdown.positive.percentage}%">${analysis.breakdown.positive.percentage}%</div>` : ''}
-                ${analysis.breakdown.neutral.percentage > 0 ? `<div class="sentiment-neutral" style="width: ${analysis.breakdown.neutral.percentage}%">${analysis.breakdown.neutral.percentage}%</div>` : ''}
-                ${analysis.breakdown.negative.percentage > 0 ? `<div class="sentiment-negative" style="width: ${analysis.breakdown.negative.percentage}%">${analysis.breakdown.negative.percentage}%</div>` : ''}
-            </div>
-            <p style="color: #718096; font-size: 0.9em; margin-bottom: 10px;">${analysis.total} articles analyzed</p>
-            ${comparisonHTML}
-        </div>
-        `;
-    }
-
-    _generateMentionsSection(data) {
+        const injury = data.injury;
+        const newsAnalysis = data.news?.analysis;
         const podcastCount = data.podcasts ? data.podcasts.length : 0;
         const youtubeCount = data.youtube ? data.youtube.length : 0;
         const redditCount = data.reddit ? data.reddit.length : 0;
 
-        return `
-        <div class="section">
-            <div class="section-title">💬 Social Media Mentions</div>
+        // Injury Status
+        const statusBadge = isInjured
+            ? '<span class="status-badge status-injured">Injured</span>'
+            : '<span class="status-badge status-healthy">Healthy</span>';
+
+        // Injury Details
+        const injuryDetails = isInjured
+            ? `<div><strong>${injury.Team} ${injury.Position}</strong></div>
+               <div class="injury-detail">Body Part: ${injury.BodyPart || 'N/A'}</div>
+               <div class="injury-detail">Status: ${injury.Status || 'Unknown'}</div>`
+            : '<span class="no-data">None</span>';
+
+        // News Sentiment
+        let newsSentiment = '<span class="no-data">No data</span>';
+        if (newsAnalysis) {
+            const sentimentClass = newsAnalysis.overallSentiment.score > 0 ? 'positive' : newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral';
+            newsSentiment = `
+                <div class="sentiment-score sentiment-${sentimentClass}">${newsAnalysis.overallSentiment.label} (${newsAnalysis.overallSentiment.score})</div>
+                <div class="sentiment-breakdown">${newsAnalysis.total} articles: ${newsAnalysis.breakdown.positive.percentage}% pos, ${newsAnalysis.breakdown.neutral.percentage}% neu, ${newsAnalysis.breakdown.negative.percentage}% neg</div>
+            `;
+        }
+
+        // Source Comparison
+        let sourceComparison = '<span class="no-data">N/A</span>';
+        if (newsAnalysis && newsAnalysis.sourceComparison.national.count > 0 && newsAnalysis.sourceComparison.local.count > 0) {
+            sourceComparison = `
+                <div class="comparison">National: ${newsAnalysis.sourceComparison.national.avgSentiment} (${newsAnalysis.sourceComparison.national.count})</div>
+                <div class="comparison">Local: ${newsAnalysis.sourceComparison.local.avgSentiment} (${newsAnalysis.sourceComparison.local.count})</div>
+                <div class="comparison">Diff: ${newsAnalysis.sourceComparison.difference}</div>
+            `;
+        }
+
+        // Social Media
+        const socialMedia = `
             <div class="mentions">
-                <div class="mention-badge">
-                    <strong>${podcastCount}</strong>
-                    <span>Podcasts</span>
-                </div>
-                <div class="mention-badge">
-                    <strong>${youtubeCount}</strong>
-                    <span>YouTube</span>
-                </div>
-                <div class="mention-badge">
-                    <strong>${redditCount}</strong>
-                    <span>Reddit</span>
-                </div>
+                <div class="mention-item">Pod: <span class="mention-count">${podcastCount}</span></div>
+                <div class="mention-item">YT: <span class="mention-count">${youtubeCount}</span></div>
+                <div class="mention-item">Reddit: <span class="mention-count">${redditCount}</span></div>
             </div>
-        </div>
+        `;
+
+        // Timestamp
+        const timestamp = `<div class="timestamp">${new Date(player.lastChecked).toLocaleDateString()}<br>${new Date(player.lastChecked).toLocaleTimeString()}</div>`;
+
+        return `
+        <tr>
+            <td class="player-name">${player.name}</td>
+            <td>${statusBadge}</td>
+            <td>${injuryDetails}</td>
+            <td>${newsSentiment}</td>
+            <td>${sourceComparison}</td>
+            <td>${socialMedia}</td>
+            <td>${timestamp}</td>
+        </tr>
         `;
     }
 
