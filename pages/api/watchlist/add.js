@@ -1,4 +1,4 @@
-const KVWatchlistManager = require('../../../kv-watchlist-manager');
+const PostgresWatchlistManager = require('../../../postgres-watchlist-manager');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,7 +12,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Player name is required' });
     }
 
-    const watchlist = new KVWatchlistManager();
+    const watchlist = new PostgresWatchlistManager();
     const result = await watchlist.addPlayer(playerName.trim());
 
     if (result.success) {
