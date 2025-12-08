@@ -38,9 +38,16 @@ In the Vercel project settings, add your environment variables:
 NFL_API_KEY=your_sportsdata_io_api_key
 YOUTUBE_API_KEY=your_youtube_api_key (optional)
 NEWS_API_KEY=your_news_api_key (optional)
+DATABASE_URL=your_postgresql_connection_string (required)
+AUTH_USERNAME=admin (required)
+AUTH_PASSWORD_HASH=your_bcrypt_hash (required)
+JWT_SECRET=your_random_secret_key (optional but recommended)
 ```
 
 3. Make sure to set them for **Production**, **Preview**, and **Development** environments
+
+**For authentication setup, see [AUTH-SETUP.md](AUTH-SETUP.md)**
+**For database setup, see [POSTGRES-SETUP.md](POSTGRES-SETUP.md)**
 
 ### Step 4: Deploy
 
@@ -48,23 +55,25 @@ NEWS_API_KEY=your_news_api_key (optional)
 2. Wait for the build to complete
 3. Your app will be live at `https://your-project-name.vercel.app`
 
-### Step 5: Set Up Vercel KV (Required for Persistent Storage)
+### Step 5: Set Up PostgreSQL Database (Required for Persistent Storage)
 
-**IMPORTANT:** Your watchlist needs Vercel KV to persist data permanently.
+**IMPORTANT:** Your watchlist needs a PostgreSQL database to persist data permanently.
 
-1. In your Vercel project, go to the **"Storage"** tab
-2. Click **"Create Database"**
-3. Select **"KV"** (Key-Value Store)
-4. Name it `nfl-tracker-kv` (or any name you prefer)
-5. Choose a region close to you
-6. Click **"Create"**
-7. Click **"Connect to Project"**
-8. Select your NFL Tracker project
-9. Check all environments (Production, Preview, Development)
-10. Click **"Connect"**
-11. **Redeploy your app** from the Deployments tab
+You can use any PostgreSQL provider (vendor-independent):
+- **Railway** (recommended) - Easy setup, free tier available
+- **Supabase** - Free 500MB PostgreSQL database
+- **Neon** - Serverless PostgreSQL
+- **Vercel Postgres** - If you prefer staying in Vercel ecosystem
+- **ElephantSQL** - Simple PostgreSQL hosting
 
-**For detailed KV setup instructions, see [VERCEL-KV-SETUP.md](VERCEL-KV-SETUP.md)**
+**For detailed database setup instructions, see [POSTGRES-SETUP.md](POSTGRES-SETUP.md)**
+
+Quick Railway Setup:
+1. Go to [Railway.app](https://railway.app)
+2. Create a new PostgreSQL database
+3. Copy the connection string
+4. Add it as `DATABASE_URL` in Vercel environment variables
+5. Redeploy your app
 
 ## Method 2: Deploy via Vercel CLI (Recommended for Developers)
 
@@ -126,10 +135,12 @@ https://your-project-name.vercel.app
 
 ### Using the Dashboard
 
-1. **Add Players**: Type a player name and click "Add Player"
-2. **Update Data**: Click "Update All" to fetch latest data for all players
-3. **Remove Players**: Click the "×" button on any player card
-4. **View Details**: Each player card shows:
+1. **Login**: You'll be prompted to login with your username and password
+2. **Add Players**: Type a player name and click "Add Player"
+3. **Update Data**: Click "Update All" to fetch latest data for all players
+4. **Remove Players**: Click the "×" button on any player card
+5. **Logout**: Click the "Logout" button in the header when you're done
+6. **View Details**: Each player card shows:
    - Injury status
    - News sentiment analysis
    - Social media mentions
@@ -142,6 +153,10 @@ https://your-project-name.vercel.app
 | `NFL_API_KEY` | ✅ Yes | Your SportsData.io API key for injury data |
 | `YOUTUBE_API_KEY` | ⚠️ Optional | YouTube Data API for video mentions |
 | `NEWS_API_KEY` | ⚠️ Optional | News API for sentiment analysis |
+| `DATABASE_URL` | ✅ Yes | PostgreSQL connection string for data storage |
+| `AUTH_USERNAME` | ✅ Yes | Dashboard login username |
+| `AUTH_PASSWORD_HASH` | ✅ Yes | Bcrypt hash of dashboard password |
+| `JWT_SECRET` | ⚠️ Recommended | Secret key for JWT tokens (uses default if not set) |
 
 ## Custom Domain (Optional)
 

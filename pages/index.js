@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 
 export default function Home() {
   const [watchlist, setWatchlist] = useState([]);
@@ -7,10 +8,28 @@ export default function Home() {
   const [updating, setUpdating] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
+  const [username, setUsername] = useState('');
+  const router = useRouter();
 
   useEffect(() => {
-    fetchWatchlist();
+    checkAuth();
   }, []);
+
+  const checkAuth = async () => {
+    try {
+      const res = await fetch('/api/auth/verify');
+      if (!res.ok) {
+        router.push('/login');
+        return;
+      }
+      const data = await res.json();
+      setUsername(data.username);
+      fetchWatchlist();
+    } catch (error) {
+      console.error('Auth check failed:', error);
+      router.push('/login');
+    }
+  };
 
   const fetchWatchlist = async () => {
     try {
@@ -87,6 +106,16 @@ export default function Home() {
     }
   };
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+      router.push('/login');
+    }
+  };
+
   const stats = {
     total: watchlist.length,
     injured: watchlist.filter(p => p.cachedData?.injury).length,
@@ -104,8 +133,16 @@ export default function Home() {
       <div className="container">
         {/* Header */}
         <div className="header">
-          <h1>🏈 NFL Player Tracking Dashboard</h1>
-          <p className="subtitle">Monitor injury status, news sentiment, and social media mentions</p>
+          <div className="header-top">
+            <div>
+              <h1>🏈 NFL Player Tracking Dashboard</h1>
+              <p className="subtitle">Monitor injury status, news sentiment, and social media mentions</p>
+            </div>
+            <div className="user-section">
+              <span className="username">👤 {username}</span>
+              <button onClick={handleLogout} className="logout-btn">Logout</button>
+            </div>
+          </div>
 
           {/* Stats */}
           <div className="stats">
@@ -181,6 +218,41 @@ export default function Home() {
           margin-bottom: 20px;
           box-shadow: 0 4px 20px rgba(0,0,0,0.08);
           border-top: 4px solid #0a2463;
+        }
+
+        .header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 20px;
+        }
+
+        .user-section {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+
+        .username {
+          color: #0a2463;
+          font-weight: 600;
+          font-size: 14px;
+        }
+
+        .logout-btn {
+          padding: 8px 16px;
+          background: #dc2626;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          font-weight: 600;
+          font-size: 14px;
+          cursor: pointer;
+          transition: background 0.2s;
+        }
+
+        .logout-btn:hover {
+          background: #b91c1c;
         }
 
         h1 {
@@ -292,6 +364,15 @@ export default function Home() {
         }
 
         @media (max-width: 768px) {
+          .header-top {
+            flex-direction: column;
+            gap: 15px;
+          }
+
+          .user-section {
+            align-self: flex-end;
+          }
+
           .stats {
             flex-direction: column;
           }
