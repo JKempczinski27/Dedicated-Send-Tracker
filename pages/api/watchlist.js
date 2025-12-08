@@ -1,4 +1,4 @@
-const KVWatchlistManager = require('../../kv-watchlist-manager');
+const PostgresWatchlistManager = require('../../postgres-watchlist-manager');
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -6,7 +6,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const watchlist = new KVWatchlistManager();
+    const watchlist = new PostgresWatchlistManager();
     const players = await watchlist.getPlayers();
     const stats = await watchlist.getStats();
 
