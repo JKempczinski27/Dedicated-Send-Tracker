@@ -397,7 +397,10 @@ export default function Home() {
 function PlayerCard({ player, onRemove }) {
   const data = player.cachedData;
   const hasData = data && player.lastChecked;
-  const isInjured = hasData && data.injury;
+  // Check if player is injured (works with both old and new API formats)
+  const injury = data?.injury;
+  const isInjured = injury && injury.found !== false && 
+                    injury.status && injury.status !== 'ACT' && injury.status !== 'Active';
 
   if (!hasData) {
     return (
@@ -450,11 +453,26 @@ function PlayerCard({ player, onRemove }) {
     );
   }
 
-  const injury = data.injury;
   const newsAnalysis = data.news?.analysis;
   const podcastCount = data.podcasts ? data.podcasts.length : 0;
   const youtubeCount = data.youtube ? data.youtube.length : 0;
   const redditCount = data.reddit ? data.reddit.length : 0;
+
+  // Status display mapping for Sportradar API
+  const getStatusDisplay = (status) => {
+    const statusMap = {
+      'ACT': '✅ Active (Healthy)',
+      'IR': '🚑 Injured Reserve',
+      'PRA': '📋 Practice Squad',
+      'PUP': '⚕️ Physically Unable to Perform',
+      'IRD': '🔄 IR - Designated for Return',
+      'SUS': '⛔ Suspended',
+      'PRA_IR': '📋 Practice Squad - Injured',
+      'NON': '❌ Non-Football Injury List',
+      'Active': '✅ Active (Healthy)'
+    };
+    return statusMap[status] || status || 'Unknown';
+  };
 
   return (
     <div className="player-card">
@@ -469,14 +487,25 @@ function PlayerCard({ player, onRemove }) {
       </div>
 
       {/* Injury Details */}
-      {injury && (
+      {injury && injury.found && (
         <div className="section">
-          <div className="section-title">🏥 Injury Details</div>
+          <div className="section-title">🏥 Player Status</div>
           <div className="injury-details">
-            <p><strong>Team:</strong> {injury.Team}</p>
-            <p><strong>Position:</strong> {injury.Position}</p>
-            <p><strong>Injury:</strong> {injury.BodyPart || 'N/A'}</p>
-            <p><strong>Status:</strong> {injury.Status || 'Unknown'}</p>
+            <p><strong>Name:</strong> {injury.name}</p>
+            <p><strong>Team:</strong> {injury.team || injury.Team} {injury.teamAlias ? `(${injury.teamAlias})` : ''}</p>
+            <p><strong>Position:</strong> {injury.position || injury.Position}</p>
+            {injury.jersey && <p><strong>Jersey:</strong> #{injury.jersey}</p>}
+            <p><strong>Status:</strong> {getStatusDisplay(injury.status || injury.Status)}</p>
+            {injury.BodyPart && <p><strong>Injury:</strong> {injury.BodyPart}</p>}
+          </div>
+        </div>
+      )}
+      
+      {injury && !injury.found && (
+        <div className="section">
+          <div className="section-title">🏥 Player Status</div>
+          <div className="injury-details">
+            <p>⚠️ Player not found in Sportradar database</p>
           </div>
         </div>
       )}

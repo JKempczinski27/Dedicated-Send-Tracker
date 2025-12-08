@@ -1,5 +1,11 @@
 const PostgresWatchlistManager = require('../../../postgres-watchlist-manager');
+const EnhancedTracker = require('../../../enhanced-tracker');
 const { verifyAuthFromRequest } = require('../../../lib/auth');
+
+// Increase timeout for Vercel serverless function
+export const config = {
+  maxDuration: 60, // 60 seconds to allow for API calls
+};
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -23,6 +29,18 @@ export default async function handler(req, res) {
     const result = await watchlist.addPlayer(playerName.trim());
 
     if (result.success) {
+      // Immediately fetch player data after adding
+      try {
+        console.log(`Fetching data for newly added player: ${playerName}`);
+        const tracker = new EnhancedTracker();
+        const data = await tracker.trackPlayer(playerName.trim());
+        await watchlist.updatePlayerData(playerName.trim(), data);
+        console.log(`Successfully fetched data for ${playerName}`);
+      } catch (error) {
+        console.error(`Error fetching data for ${playerName}:`, error.message);
+        // Continue even if data fetch fails
+      }
+      
       const players = await watchlist.getPlayers();
       res.status(200).json({ message: result.message, players });
     } else {
