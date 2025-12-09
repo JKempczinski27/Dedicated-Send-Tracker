@@ -20,7 +20,7 @@ class NewsTracker {
 
     // Search for news articles about a player
     async searchNews(playerName, fromDate = null) {
-        const query = encodeURIComponent(`${playerName} NFL injury`);
+        const query = encodeURIComponent(`${playerName} NFL`);
         const dateParam = fromDate || this._getDateDaysAgo(7); // Last 7 days by default
         const path = `/v2/everything?q=${query}&language=en&sortBy=publishedAt&from=${dateParam}&apiKey=${this.apiKey}`;
 
