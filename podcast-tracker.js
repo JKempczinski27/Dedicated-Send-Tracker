@@ -6,23 +6,23 @@ class PodcastTracker {
         this.popularPodcasts = [
             {
                 name: 'Around the NFL',
-                feed: 'http://feeds.megaphone.fm/aroundthenfl'
+                feed: 'https://feeds.megaphone.fm/ESP2756429004'
             },
             {
                 name: 'The Pat McAfee Show',
-                feed: 'https://feeds.megaphone.fm/thepatmcafeeshow'
+                feed: 'https://feeds.megaphone.fm/MLT6310246617'
             },
             {
-                name: 'NFL Fantasy Football Podcast',
-                feed: 'https://feeds.megaphone.fm/nflfantasyfootball'
+                name: 'Pardon My Take',
+                feed: 'https://feeds.megaphone.fm/STU4418153747'
             },
             {
-                name: 'Good Morning Football',
-                feed: 'https://feeds.megaphone.fm/goodmorningfootball'
+                name: 'The Herd with Colin Cowherd',
+                feed: 'https://feeds.megaphone.fm/ESP8288787073'
             },
             {
-                name: 'NFL: The Insiders',
-                feed: 'https://feeds.megaphone.fm/nfltheinsiders'
+                name: 'First Things First',
+                feed: 'https://feeds.megaphone.fm/ESP7963773861'
             }
         ];
     }

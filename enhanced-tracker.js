@@ -170,7 +170,8 @@ class EnhancedTracker {
             results.podcasts = await this.podcastTracker.searchPodcasts(playerName);
             this.displayPodcastMentions(results.podcasts);
         } catch (error) {
-            console.log(`   Error: ${error.message}\n`);
+            console.log(`   ⚠️ Podcast feeds unavailable\n`);
+            results.podcasts = [];
         }
 
         // 4. Search YouTube
