@@ -7,10 +7,11 @@ const ACCESS_LEVEL = process.env.SPORTRADAR_ACCESS_LEVEL || 'trial';
 
 // Map of team abbreviations to team IDs
 const TEAM_MAP = {
-    'IND': 'c5a59daa-53a7-4de0-851f-fb12be893e9e', // Colts - corrected
-    'NYG': 'e5174c3e-1dca-4d61-8b66-7bb183d6c2c3',
-    'KC': 'a20471b4-a8d9-40c7-95ad-90eb1e639c6f',
-    'BUF': 'dc7f5c0e-b15e-4df0-a1af-9c75a1e5a11d',
+    'IND': '82cf9565-6eb9-4f01-bdbd-5aa0d472fcd9', // Indianapolis Colts
+    'NYG': 'e5174c3e-1dca-4d61-8b66-7bb183d6c2c3', // New York Giants
+    'KC': 'a20471b4-a8d9-40c7-95ad-90eb1e639c6f', // Kansas City Chiefs
+    'BUF': 'dc7f5c0e-b15e-4df0-a1af-9c75a1e5a11d', // Buffalo Bills
+    'DET': 'c5a59daa-53a7-4de0-851f-fb12be893e9e', // Detroit Lions
     // Add more as needed
 };
 

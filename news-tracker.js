@@ -16,6 +16,22 @@ class NewsTracker {
             'tribune', 'times', 'post', 'journal', 'gazette',
             'chronicle', 'herald', 'news', 'press'
         ];
+
+        // Injury alert keywords for breaking news detection
+        // High-priority keywords indicate serious injuries
+        this.highPriorityInjuryKeywords = [
+            'torn', 'tear', 'tore', 'acl', 'mcl', 'achilles',
+            'broken', 'fracture', 'fractured', 'surgery',
+            'injured reserve', 'out for season', 'season-ending',
+            'ruled out', 'sidelined'
+        ];
+        
+        // Medium-priority require context (player name nearby)
+        this.mediumPriorityInjuryKeywords = [
+            'injury', 'injured', 'hurt', 'concussion',
+            'ir ', ' ir', 'week-to-week', 'day-to-day',
+            'questionable', 'doubtful'
+        ];
     }
 
     // Search for news articles about a player
@@ -31,7 +47,8 @@ class NewsTracker {
             console.error('News API error:', error.message);
             return {
                 articles: [],
-                analysis: null
+                analysis: null,
+                injuryAlert: null
             };
         }
     }
@@ -41,7 +58,8 @@ class NewsTracker {
         if (!articles || articles.length === 0) {
             return {
                 articles: [],
-                analysis: null
+                analysis: null,
+                injuryAlert: null
             };
         }
 
@@ -49,6 +67,7 @@ class NewsTracker {
             const text = `${article.title} ${article.description || ''}`;
             const sentimentScore = this.sentiment.analyze(text);
             const sourceType = this._classifySource(article.source.name);
+            const hasInjuryKeywords = this._detectInjuryKeywords(text);
 
             return {
                 title: article.title,
@@ -57,19 +76,23 @@ class NewsTracker {
                 sourceType: sourceType,
                 url: article.url,
                 publishedAt: new Date(article.publishedAt).toLocaleDateString(),
+                publishedAtRaw: article.publishedAt,
                 sentiment: {
                     score: sentimentScore.score,
                     comparative: sentimentScore.comparative,
                     label: this._getSentimentLabel(sentimentScore.score)
-                }
+                },
+                hasInjuryKeywords: hasInjuryKeywords
             };
         });
 
         const analysis = this._analyzeArticles(processedArticles);
+        const injuryAlert = this._detectBreakingInjuryNews(processedArticles);
 
         return {
             articles: processedArticles,
-            analysis: analysis
+            analysis: analysis,
+            injuryAlert: injuryAlert
         };
     }
 
@@ -153,6 +176,62 @@ class NewsTracker {
         return date.toISOString().split('T')[0];
     }
 
+    // Detect injury keywords in article text (more sophisticated detection)
+    _detectInjuryKeywords(text) {
+        const lowerText = text.toLowerCase();
+        
+        // Check for high-priority keywords (immediate red flags)
+        const hasHighPriority = this.highPriorityInjuryKeywords.some(keyword => 
+            lowerText.includes(keyword.toLowerCase())
+        );
+        
+        if (hasHighPriority) return true;
+        
+        // Check for medium-priority keywords (require additional context)
+        // Only flag if multiple injury-related terms appear
+        const mediumMatches = this.mediumPriorityInjuryKeywords.filter(keyword => 
+            lowerText.includes(keyword.toLowerCase())
+        );
+        
+        // Require at least 2 medium-priority matches to reduce false positives
+        return mediumMatches.length >= 2;
+    }
+
+    // Detect breaking injury news (within last 48 hours)
+    _detectBreakingInjuryNews(articles) {
+        const now = new Date();
+        const fortyEightHoursAgo = new Date(now.getTime() - (48 * 60 * 60 * 1000));
+
+        const recentInjuryArticles = articles.filter(article => {
+            const publishedDate = new Date(article.publishedAtRaw);
+            return article.hasInjuryKeywords && publishedDate >= fortyEightHoursAgo;
+        });
+
+        if (recentInjuryArticles.length === 0) {
+            return null;
+        }
+
+        // Get the most recent injury article
+        const mostRecent = recentInjuryArticles.sort((a, b) => 
+            new Date(b.publishedAtRaw) - new Date(a.publishedAtRaw)
+        )[0];
+
+        const hoursAgo = Math.floor((now - new Date(mostRecent.publishedAtRaw)) / (1000 * 60 * 60));
+
+        return {
+            detected: true,
+            count: recentInjuryArticles.length,
+            mostRecentArticle: {
+                title: mostRecent.title,
+                source: mostRecent.source,
+                url: mostRecent.url,
+                publishedAt: mostRecent.publishedAt,
+                hoursAgo: hoursAgo
+            },
+            articles: recentInjuryArticles
+        };
+    }
+
     _makeRequest(hostname, path) {
         return new Promise((resolve, reject) => {
             const options = {
@@ -160,7 +239,8 @@ class NewsTracker {
                 path,
                 method: 'GET',
                 headers: {
-                    'Accept': 'application/json'
+                    'Accept': 'application/json',
+                    'User-Agent': 'NFL-Player-Tracker/1.0'
                 }
             };
 
@@ -179,7 +259,12 @@ class NewsTracker {
                             reject(new Error('Failed to parse response'));
                         }
                     } else {
-                        reject(new Error(`API request failed with status ${res.statusCode}`));
+                        try {
+                            const errorData = JSON.parse(data);
+                            reject(new Error(`API request failed with status ${res.statusCode}: ${errorData.message || data}`));
+                        } catch {
+                            reject(new Error(`API request failed with status ${res.statusCode}`));
+                        }
                     }
                 });
             }).on('error', (error) => {

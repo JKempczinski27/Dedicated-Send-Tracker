@@ -27,12 +27,14 @@ A comprehensive JavaScript tracker that monitors NFL player injury statuses, tra
 - Organized display by team
 - Real-time injury updates
 
-### 📰 News Sentiment Analysis
+### 📰 News Sentiment Analysis & Breaking Injury Alerts
 - Search news articles about players
 - AI-powered sentiment analysis (Positive/Negative/Neutral)
 - Compare **national vs local coverage** sentiment
 - Track how media narrative changes over time
 - Identify coverage bias between national and local publications
+- **🚨 Breaking Injury Alerts**: Automatically detect injury keywords in recent articles (last 48 hours)
+- Get early warning of injuries before official roster updates (which can lag 24-48 hours)
 
 ### 🎙️ Podcast Mention Tracking
 - Search popular NFL podcasts via RSS feeds
@@ -310,12 +312,26 @@ Simply open the generated `dashboard.html` file in your web browser!
 - Shows upvotes, comments, and user flairs
 - No authentication needed
 
+## Important Notes
+
+### Breaking Injury Alerts & API Lag
+This tracker includes a **hybrid approach** to injury detection:
+
+1. **Official Roster API (Sportradar)**: Provides authoritative injury status, but updates lag 24-48 hours behind breaking news
+2. **Breaking News Detection**: Automatically scans news articles for injury keywords (torn, ACL, Achilles, surgery, IR, etc.)
+3. **Early Warning System**: When injury keywords appear in recent articles (last 48 hours), a prominent alert is displayed even if the official roster shows "Active"
+
+**Why this matters**: When a player gets injured, news media reports it immediately, but it takes 24-48 hours for teams to officially update roster status in the Sportradar API. The breaking news alert feature ensures you know about injuries as soon as they're reported, not when they're officially processed.
+
+**Example**: Daniel Jones tore his Achilles on December 8, 2025. News articles reported it immediately with headlines like "Daniel Jones injury makes Seahawks huge favorites vs. Colts", but the Sportradar API continued showing him as "ACT" (Active/Healthy) for the next day. The breaking news alert would flag this discrepancy.
+
 ## Limitations
 
 - **YouTube transcripts**: Requires additional setup for full transcript search
 - **Reddit location data**: Not available through API
 - **News API**: Free tier has rate limits (100 requests/day)
 - **Podcast transcripts**: Only searches titles/descriptions, not full audio
+- **Official Roster Data**: Sportradar API lags 24-48 hours behind breaking injury news (addressed by breaking news alerts)
 
 ## Future Enhancements
 
@@ -323,8 +339,8 @@ Potential features to add:
 - [ ] Full YouTube transcript search
 - [ ] Twitter/X integration (requires paid API)
 - [ ] Historical sentiment tracking with charts
-- [ ] Alert system for breaking injury news
-- [ ] Web dashboard for visual analytics
+- [x] Alert system for breaking injury news ✅ **IMPLEMENTED**
+- [x] Web dashboard for visual analytics ✅ **IMPLEMENTED**
 - [ ] Player photo integration from NFL API
 
 ## License

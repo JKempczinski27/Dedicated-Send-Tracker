@@ -474,6 +474,9 @@ function PlayerCard({ player, onRemove }) {
     return statusMap[status] || status || 'Unknown';
   };
 
+  // Check for breaking injury alert
+  const injuryAlert = data.news?.injuryAlert;
+
   return (
     <div className="player-card">
       <div className="player-header">
@@ -482,9 +485,46 @@ function PlayerCard({ player, onRemove }) {
           <span className={`injury-badge ${isInjured ? 'injured' : 'healthy'}`}>
             {isInjured ? '⚠️ INJURED' : '✅ HEALTHY'}
           </span>
+          {newsAnalysis && (
+            <span className={`sentiment-badge ${
+              newsAnalysis.overallSentiment.score > 2 ? 'very-positive' :
+              newsAnalysis.overallSentiment.score > 0 ? 'positive' :
+              newsAnalysis.overallSentiment.score < -2 ? 'very-negative' :
+              newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral'
+            }`}>
+              {newsAnalysis.overallSentiment.score > 0 ? '📈' : 
+               newsAnalysis.overallSentiment.score < 0 ? '📉' : '➖'} 
+              {newsAnalysis.overallSentiment.label}
+            </span>
+          )}
           <button onClick={() => onRemove(player.name)} className="remove-btn">×</button>
         </div>
       </div>
+
+      {/* Breaking Injury Alert */}
+      {injuryAlert && injuryAlert.detected && (
+        <div className="injury-alert">
+          <div className="alert-header">
+            <span className="alert-icon">🚨</span>
+            <span className="alert-title">BREAKING INJURY NEWS</span>
+          </div>
+          <div className="alert-content">
+            <p className="alert-message">
+              ⚠️ {injuryAlert.count} recent {injuryAlert.count === 1 ? 'article' : 'articles'} with injury keywords detected in the last 48 hours.
+              Official roster status may not be updated yet.
+            </p>
+            <div className="alert-article">
+              <p className="alert-article-title">{injuryAlert.mostRecentArticle.title}</p>
+              <p className="alert-article-meta">
+                {injuryAlert.mostRecentArticle.source} • {injuryAlert.mostRecentArticle.hoursAgo}h ago
+              </p>
+              <a href={injuryAlert.mostRecentArticle.url} target="_blank" rel="noopener noreferrer" className="alert-link">
+                Read Article →
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Injury Details */}
       {injury && injury.found && (
@@ -517,6 +557,8 @@ function PlayerCard({ player, onRemove }) {
           <div className={`sentiment-score ${newsAnalysis.overallSentiment.score > 0 ? 'positive' : newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral'}`}>
             {newsAnalysis.overallSentiment.label} ({newsAnalysis.overallSentiment.score})
           </div>
+          <p className="article-count">{newsAnalysis.total} articles analyzed (last 7 days)</p>
+          
           <div className="sentiment-bar">
             {newsAnalysis.breakdown.positive.percentage > 0 && (
               <div className="sentiment-positive" style={{width: `${newsAnalysis.breakdown.positive.percentage}%`}}>
@@ -534,21 +576,53 @@ function PlayerCard({ player, onRemove }) {
               </div>
             )}
           </div>
-          <p className="article-count">{newsAnalysis.total} articles analyzed</p>
 
           {newsAnalysis.sourceComparison.national.count > 0 && newsAnalysis.sourceComparison.local.count > 0 && (
-            <div className="comparison">
-              <div className="comparison-item">
-                <strong>National</strong>
-                <span>{newsAnalysis.sourceComparison.national.avgSentiment}</span>
+            <div className="media-comparison">
+              <div className="comparison-header">
+                <strong>📊 Media Perception</strong>
               </div>
-              <div className="comparison-item">
-                <strong>Local</strong>
-                <span>{newsAnalysis.sourceComparison.local.avgSentiment}</span>
-              </div>
-              <div className="comparison-item">
-                <strong>Difference</strong>
-                <span>{newsAnalysis.sourceComparison.difference}</span>
+              <div className="comparison-grid">
+                <div className="comparison-card">
+                  <div className="comparison-label">🌐 National Media</div>
+                  <div className={`comparison-value ${
+                    parseFloat(newsAnalysis.sourceComparison.national.avgSentiment) > 0 ? 'positive' :
+                    parseFloat(newsAnalysis.sourceComparison.national.avgSentiment) < 0 ? 'negative' : 'neutral'
+                  }`}>
+                    {newsAnalysis.sourceComparison.national.avgSentiment}
+                  </div>
+                  <div className="comparison-label-small">{newsAnalysis.sourceComparison.national.label}</div>
+                  <div className="comparison-count">{newsAnalysis.sourceComparison.national.count} articles</div>
+                </div>
+                <div className="comparison-card">
+                  <div className="comparison-label">🏠 Local Media</div>
+                  <div className={`comparison-value ${
+                    parseFloat(newsAnalysis.sourceComparison.local.avgSentiment) > 0 ? 'positive' :
+                    parseFloat(newsAnalysis.sourceComparison.local.avgSentiment) < 0 ? 'negative' : 'neutral'
+                  }`}>
+                    {newsAnalysis.sourceComparison.local.avgSentiment}
+                  </div>
+                  <div className="comparison-label-small">{newsAnalysis.sourceComparison.local.label}</div>
+                  <div className="comparison-count">{newsAnalysis.sourceComparison.local.count} articles</div>
+                </div>
+                <div className="comparison-card highlight">
+                  <div className="comparison-label">📈 Difference</div>
+                  <div className={`comparison-value ${
+                    parseFloat(newsAnalysis.sourceComparison.difference) > 2 ? 'very-positive' :
+                    parseFloat(newsAnalysis.sourceComparison.difference) > 0 ? 'positive' :
+                    parseFloat(newsAnalysis.sourceComparison.difference) < -2 ? 'very-negative' :
+                    parseFloat(newsAnalysis.sourceComparison.difference) < 0 ? 'negative' : 'neutral'
+                  }`}>
+                    {newsAnalysis.sourceComparison.difference > 0 ? '+' : ''}{newsAnalysis.sourceComparison.difference}
+                  </div>
+                  <div className="comparison-info">
+                    {parseFloat(newsAnalysis.sourceComparison.difference) > 0 
+                      ? 'Local media more positive' 
+                      : parseFloat(newsAnalysis.sourceComparison.difference) < 0 
+                      ? 'National media more positive' 
+                      : 'Similar coverage'}
+                  </div>
+                </div>
               </div>
             </div>
           )}
@@ -630,6 +704,41 @@ function PlayerCard({ player, onRemove }) {
           color: white;
         }
 
+        .sentiment-badge {
+          padding: 8px 16px;
+          border-radius: 20px;
+          font-weight: bold;
+          font-size: 0.85em;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+        }
+
+        .sentiment-badge.very-positive {
+          background: #10b981;
+          color: white;
+        }
+
+        .sentiment-badge.positive {
+          background: #34d399;
+          color: white;
+        }
+
+        .sentiment-badge.neutral {
+          background: #6b7280;
+          color: white;
+        }
+
+        .sentiment-badge.negative {
+          background: #f59e0b;
+          color: white;
+        }
+
+        .sentiment-badge.very-negative {
+          background: #dc2626;
+          color: white;
+        }
+
         .remove-btn {
           padding: 4px 10px;
           background: #6b7280;
@@ -668,6 +777,93 @@ function PlayerCard({ player, onRemove }) {
         .injury-details p {
           margin: 5px 0;
           color: #374151;
+        }
+
+        .injury-alert {
+          background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
+          border: 2px solid #dc2626;
+          border-radius: 10px;
+          padding: 15px;
+          margin-bottom: 15px;
+          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+          animation: pulse-border 2s infinite;
+        }
+
+        @keyframes pulse-border {
+          0%, 100% {
+            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
+          }
+          50% {
+            box-shadow: 0 4px 25px rgba(220, 38, 38, 0.4);
+          }
+        }
+
+        .alert-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+        }
+
+        .alert-icon {
+          font-size: 1.5em;
+          animation: blink 1.5s infinite;
+        }
+
+        @keyframes blink {
+          0%, 50%, 100% { opacity: 1; }
+          25%, 75% { opacity: 0.4; }
+        }
+
+        .alert-title {
+          font-weight: bold;
+          color: #dc2626;
+          font-size: 1.1em;
+          letter-spacing: 0.5px;
+        }
+
+        .alert-content {
+          margin-left: 35px;
+        }
+
+        .alert-message {
+          color: #991b1b;
+          margin-bottom: 10px;
+          font-weight: 500;
+        }
+
+        .alert-article {
+          background: white;
+          padding: 12px;
+          border-radius: 6px;
+          border-left: 3px solid #dc2626;
+        }
+
+        .alert-article-title {
+          font-weight: 600;
+          color: #0a2463;
+          margin-bottom: 5px;
+          font-size: 0.95em;
+        }
+
+        .alert-article-meta {
+          color: #6b7280;
+          font-size: 0.85em;
+          margin-bottom: 8px;
+        }
+
+        .alert-link {
+          color: #dc2626;
+          text-decoration: none;
+          font-weight: 600;
+          font-size: 0.9em;
+          display: inline-block;
+          transition: color 0.2s;
+        }
+
+        .alert-link:hover {
+          color: #991b1b;
+          text-decoration: underline;
         }
 
         .sentiment-score {
@@ -750,6 +946,101 @@ function PlayerCard({ player, onRemove }) {
           font-size: 1.3em;
           font-weight: bold;
           color: #0a2463;
+        }
+
+        .media-comparison {
+          margin-top: 15px;
+          background: #f9fafb;
+          padding: 15px;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+        }
+
+        .comparison-header {
+          margin-bottom: 15px;
+          font-size: 1em;
+          color: #0a2463;
+        }
+
+        .comparison-grid {
+          display: grid;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 12px;
+        }
+
+        .comparison-card {
+          background: white;
+          padding: 15px;
+          border-radius: 8px;
+          text-align: center;
+          border: 2px solid #e5e7eb;
+          transition: transform 0.2s;
+        }
+
+        .comparison-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .comparison-card.highlight {
+          border-color: #0a2463;
+          background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+        }
+
+        .comparison-label {
+          font-size: 0.85em;
+          color: #6b7280;
+          font-weight: 600;
+          margin-bottom: 8px;
+        }
+
+        .comparison-label-small {
+          font-size: 0.75em;
+          color: #9ca3af;
+          margin-top: 5px;
+          font-weight: 500;
+        }
+
+        .comparison-value {
+          font-size: 2em;
+          font-weight: bold;
+          margin: 8px 0;
+        }
+
+        .comparison-value.very-positive {
+          color: #10b981;
+        }
+
+        .comparison-value.positive {
+          color: #34d399;
+        }
+
+        .comparison-value.neutral {
+          color: #6b7280;
+        }
+
+        .comparison-value.negative {
+          color: #f59e0b;
+        }
+
+        .comparison-value.very-negative {
+          color: #dc2626;
+        }
+
+        .comparison-count {
+          font-size: 0.75em;
+          color: #9ca3af;
+          margin-top: 5px;
+        }
+
+        .comparison-info {
+          font-size: 0.75em;
+          color: #6b7280;
+          margin-top: 8px;
+          padding: 6px;
+          background: rgba(10, 36, 99, 0.05);
+          border-radius: 4px;
+          font-weight: 500;
         }
 
         .mentions {
