@@ -30,14 +30,15 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie": "^0.6.0",
     "dotenv": "^16.3.1",
-    "sentiment": "^5.0.2",
+    "jsonwebtoken": "^9.0.2",
     "next": "^14.0.4",
+    "pg": "^8.11.3",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "pg": "^8.11.3",
-    "jsonwebtoken": "^9.0.2",
-    "bcryptjs": "^2.4.3",
-    "cookie": "^0.6.0"
+    "sentiment": "^5.0.2",
+    "youtube-transcript": "^1.2.1"
   }
 }
