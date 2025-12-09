@@ -629,24 +629,36 @@ function PlayerCard({ player, onRemove }) {
         </div>
       )}
 
-      {/* Social Media Mentions */}
-      <div className="section">
-        <div className="section-title">💬 Social Media Mentions</div>
-        <div className="mentions">
-          <div className="mention-badge">
-            <strong>{podcastCount}</strong>
-            <span>Podcasts</span>
-          </div>
-          <div className="mention-badge">
-            <strong>{youtubeCount}</strong>
-            <span>YouTube</span>
-          </div>
-          <div className="mention-badge">
-            <strong>{redditCount}</strong>
-            <span>Reddit</span>
+      {/* Top News Articles */}
+      {newsAnalysis && newsAnalysis.total > 0 && (
+        <div className="section">
+          <div className="section-title">📰 Recent News Articles</div>
+          <div className="articles-list">
+            {data.news?.articles?.slice(0, 5).map((article, idx) => (
+              <div key={idx} className="article-item">
+                <div className="article-header">
+                  <a href={article.url} target="_blank" rel="noopener noreferrer" className="article-title">
+                    {article.title}
+                  </a>
+                  <span className={`article-sentiment ${
+                    article.sentiment.score > 2 ? 'very-positive' :
+                    article.sentiment.score > 0 ? 'positive' :
+                    article.sentiment.score < -2 ? 'very-negative' :
+                    article.sentiment.score < 0 ? 'negative' : 'neutral'
+                  }`}>
+                    {article.sentiment.label}
+                  </span>
+                </div>
+                <div className="article-meta">
+                  <span className="article-source">{article.source}</span>
+                  <span className="article-source-type">{article.sourceType === 'national' ? '🌐 National' : article.sourceType === 'local' ? '🏠 Local' : '📰 Other'}</span>
+                  <span className="article-date">{article.publishedAt}</span>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      </div>
+      )}
 
       <p className="last-checked">Last checked: {new Date(player.lastChecked).toLocaleString()}</p>
 
@@ -1067,6 +1079,107 @@ function PlayerCard({ player, onRemove }) {
         .mention-badge span {
           font-size: 0.8em;
           color: #6b7280;
+        }
+
+        .articles-list {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+
+        .article-item {
+          background: #f9fafb;
+          padding: 12px;
+          border-radius: 8px;
+          border-left: 3px solid #0a2463;
+          transition: all 0.2s;
+        }
+
+        .article-item:hover {
+          background: #f3f4f6;
+          border-left-color: #dc2626;
+          transform: translateX(3px);
+        }
+
+        .article-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 8px;
+        }
+
+        .article-title {
+          color: #0a2463;
+          font-weight: 600;
+          font-size: 0.95em;
+          text-decoration: none;
+          flex: 1;
+          line-height: 1.4;
+        }
+
+        .article-title:hover {
+          color: #dc2626;
+          text-decoration: underline;
+        }
+
+        .article-sentiment {
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.75em;
+          font-weight: 600;
+          white-space: nowrap;
+          flex-shrink: 0;
+        }
+
+        .article-sentiment.very-positive {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .article-sentiment.positive {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .article-sentiment.neutral {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .article-sentiment.negative {
+          background: #fed7aa;
+          color: #92400e;
+        }
+
+        .article-sentiment.very-negative {
+          background: #fecaca;
+          color: #991b1b;
+        }
+
+        .article-meta {
+          display: flex;
+          gap: 12px;
+          align-items: center;
+          font-size: 0.8em;
+          color: #6b7280;
+        }
+
+        .article-source {
+          font-weight: 600;
+          color: #374151;
+        }
+
+        .article-source-type {
+          padding: 2px 8px;
+          background: white;
+          border-radius: 4px;
+          font-size: 0.9em;
+          border: 1px solid #e5e7eb;
+        }
+
+        .article-date {
+          margin-left: auto;
         }
 
         .last-checked {
