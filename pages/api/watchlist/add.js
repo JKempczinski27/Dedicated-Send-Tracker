@@ -19,14 +19,14 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { playerName } = req.body;
+    const { playerName, deploymentDate } = req.body;
 
     if (!playerName || typeof playerName !== 'string') {
       return res.status(400).json({ error: 'Player name is required' });
     }
 
     const watchlist = new PostgresWatchlistManager();
-    const result = await watchlist.addPlayer(playerName.trim());
+    const result = await watchlist.addPlayer(playerName.trim(), null, null, deploymentDate || null);
 
     if (result.success) {
       // Immediately fetch player data after adding

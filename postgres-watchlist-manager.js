@@ -20,7 +20,8 @@ class PostgresWatchlistManager {
                 position VARCHAR(50),
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_checked TIMESTAMP,
-                cached_data JSONB
+                cached_data JSONB,
+                deployment_date DATE
             );
 
             CREATE INDEX IF NOT EXISTS idx_player_name ON watchlist_players(name);
@@ -34,15 +35,15 @@ class PostgresWatchlistManager {
     }
 
     // Add player to watchlist
-    async addPlayer(playerName, team = null, position = null) {
+    async addPlayer(playerName, team = null, position = null, deploymentDate = null) {
         try {
             const query = `
-                INSERT INTO watchlist_players (name, team, position, added_at)
-                VALUES ($1, $2, $3, NOW())
+                INSERT INTO watchlist_players (name, team, position, added_at, deployment_date)
+                VALUES ($1, $2, $3, NOW(), $4)
                 RETURNING *
             `;
 
-            await this.pool.query(query, [playerName, team, position]);
+            await this.pool.query(query, [playerName, team, position, deploymentDate]);
             return { success: true, message: `Added ${playerName} to watchlist` };
         } catch (error) {
             if (error.code === '23505') { // Unique violation
@@ -88,6 +89,24 @@ class PostgresWatchlistManager {
         }
     }
 
+    // Update player deployment date
+    async updateDeploymentDate(playerName, deploymentDate) {
+        try {
+            const query = `
+                UPDATE watchlist_players
+                SET deployment_date = $1
+                WHERE name = $2
+                RETURNING *
+            `;
+
+            const result = await this.pool.query(query, [deploymentDate, playerName]);
+            return result.rowCount > 0;
+        } catch (error) {
+            console.error('Error updating deployment date:', error);
+            return false;
+        }
+    }
+
     // Get all players
     async getPlayers() {
         try {
@@ -100,6 +119,7 @@ class PostgresWatchlistManager {
                 position: row.position,
                 addedAt: row.added_at.toISOString(),
                 lastChecked: row.last_checked ? row.last_checked.toISOString() : null,
+                deploymentDate: row.deployment_date ? row.deployment_date.toISOString().split('T')[0] : null,
                 cachedData: row.cached_data
             }));
         } catch (error) {
@@ -125,6 +145,7 @@ class PostgresWatchlistManager {
                 position: row.position,
                 addedAt: row.added_at.toISOString(),
                 lastChecked: row.last_checked ? row.last_checked.toISOString() : null,
+                deploymentDate: row.deployment_date ? row.deployment_date.toISOString().split('T')[0] : null,
                 cachedData: row.cached_data
             };
         } catch (error) {

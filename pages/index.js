@@ -7,6 +7,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [newPlayerName, setNewPlayerName] = useState('');
+  const [newPlayerDeploymentDate, setNewPlayerDeploymentDate] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
   const [username, setUsername] = useState('');
   const router = useRouter();
@@ -67,11 +68,15 @@ export default function Home() {
       const res = await fetch('/api/watchlist/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ playerName: newPlayerName })
+        body: JSON.stringify({ 
+          playerName: newPlayerName,
+          deploymentDate: newPlayerDeploymentDate || null
+        })
       });
 
       if (res.ok) {
         setNewPlayerName('');
+        setNewPlayerDeploymentDate('');
         await fetchWatchlist();
       } else {
         const error = await res.json();
@@ -168,6 +173,14 @@ export default function Home() {
               value={newPlayerName}
               onChange={(e) => setNewPlayerName(e.target.value)}
               disabled={addingPlayer}
+            />
+            <input
+              type="date"
+              placeholder="Deployment Date (optional)"
+              value={newPlayerDeploymentDate}
+              onChange={(e) => setNewPlayerDeploymentDate(e.target.value)}
+              disabled={addingPlayer}
+              title="Select deployment date"
             />
             <button type="submit" disabled={addingPlayer || !newPlayerName.trim()}>
               {addingPlayer ? 'Adding...' : 'Add Player'}
@@ -296,14 +309,21 @@ export default function Home() {
           margin-top: 20px;
           display: flex;
           gap: 10px;
+          flex-wrap: wrap;
         }
 
         .add-form input {
-          flex: 1;
           padding: 12px;
           border: 2px solid #e5e7eb;
           border-radius: 8px;
           font-size: 1em;
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .add-form input[type="date"] {
+          flex: 0.8;
+          min-width: 160px;
         }
 
         .add-form input:focus {
@@ -391,6 +411,199 @@ export default function Home() {
         }
       `}</style>
     </>
+  );
+}
+
+function DeploymentDateSection({ player }) {
+  const [deploymentDate, setDeploymentDate] = useState(player.deploymentDate || '');
+  const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const res = await fetch('/api/watchlist/update-deployment-date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          playerName: player.name,
+          deploymentDate: deploymentDate || null
+        })
+      });
+
+      if (!res.ok) {
+        alert('Error updating deployment date');
+      } else {
+        setIsEditing(false);
+      }
+    } catch (error) {
+      console.error('Error updating deployment date:', error);
+      alert('Error updating deployment date');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setDeploymentDate(player.deploymentDate || '');
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="section">
+      <div className="deployment-header">
+        <div className="section-title">📅 Deployment Date</div>
+        {!isEditing && (
+          <button 
+            onClick={() => setIsEditing(true)}
+            className="edit-btn"
+          >
+            Edit
+          </button>
+        )}
+      </div>
+      
+      {isEditing ? (
+        <div className="deployment-edit">
+          <input
+            type="date"
+            value={deploymentDate}
+            onChange={(e) => setDeploymentDate(e.target.value)}
+            disabled={isSaving}
+          />
+          <div className="deployment-buttons">
+            <button 
+              onClick={handleSave}
+              disabled={isSaving}
+              className="save-btn"
+            >
+              {isSaving ? 'Saving...' : 'Save'}
+            </button>
+            <button 
+              onClick={handleCancel}
+              disabled={isSaving}
+              className="cancel-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="deployment-display">
+          {deploymentDate ? (
+            <p className="deployment-date">
+              {new Date(deploymentDate + 'T00:00:00').toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+          ) : (
+            <p className="no-deployment-date">No deployment date set</p>
+          )}
+        </div>
+      )}
+
+      <style jsx>{`
+        .deployment-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 12px;
+        }
+
+        .edit-btn {
+          padding: 6px 12px;
+          background: #0a2463;
+          color: white;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.85em;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .edit-btn:hover {
+          background: #1e40af;
+        }
+
+        .deployment-edit {
+          display: flex;
+          gap: 10px;
+          align-items: center;
+        }
+
+        .deployment-edit input {
+          padding: 8px 12px;
+          border: 2px solid #e5e7eb;
+          border-radius: 6px;
+          font-size: 1em;
+          flex: 1;
+        }
+
+        .deployment-edit input:focus {
+          outline: none;
+          border-color: #0a2463;
+        }
+
+        .deployment-buttons {
+          display: flex;
+          gap: 8px;
+        }
+
+        .save-btn, .cancel-btn {
+          padding: 8px 12px;
+          border: none;
+          border-radius: 6px;
+          cursor: pointer;
+          font-size: 0.85em;
+          font-weight: 600;
+          transition: background 0.2s;
+        }
+
+        .save-btn {
+          background: #10b981;
+          color: white;
+        }
+
+        .save-btn:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .cancel-btn {
+          background: #6b7280;
+          color: white;
+        }
+
+        .cancel-btn:hover:not(:disabled) {
+          background: #4b5563;
+        }
+
+        .save-btn:disabled, .cancel-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .deployment-display {
+          padding: 10px 0;
+        }
+
+        .deployment-date {
+          font-size: 1.05em;
+          color: #0a2463;
+          font-weight: 600;
+          margin: 0;
+        }
+
+        .no-deployment-date {
+          color: #9ca3af;
+          font-style: italic;
+          margin: 0;
+        }
+      `}</style>
+    </div>
   );
 }
 
@@ -549,6 +762,9 @@ function PlayerCard({ player, onRemove }) {
           </div>
         </div>
       )}
+
+      {/* Deployment Date */}
+      <DeploymentDateSection player={player} />
 
       {/* News Sentiment */}
       {newsAnalysis && (
