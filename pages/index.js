@@ -48,7 +48,7 @@ export default function Home() {
   const updateAllPlayers = async () => {
     try {
       setUpdating(true);
-      const res = await fetch('/api/update-all', { method: 'POST' });
+      const res = await fetch('/api/update-all', { method: 'POST', credentials: 'include' });
       const data = await res.json();
       setWatchlist(data.players || []);
     } catch (error) {
@@ -68,6 +68,7 @@ export default function Home() {
       const res = await fetch('/api/watchlist/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           playerName: newPlayerName,
           deploymentDate: newPlayerDeploymentDate || null
@@ -97,6 +98,7 @@ export default function Home() {
       const res = await fetch('/api/watchlist/remove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ playerName })
       });
 
@@ -425,6 +427,7 @@ function DeploymentDateSection({ player }) {
       const res = await fetch('/api/watchlist/update-deployment-date', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           playerName: player.name,
           deploymentDate: deploymentDate || null
