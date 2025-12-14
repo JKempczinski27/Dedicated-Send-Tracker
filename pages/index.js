@@ -99,8 +99,14 @@ export default function Home() {
 
   const stats = {
     total: watchlist.length,
-    injured: watchlist.filter(p => p.cachedData?.injury).length,
-    healthy: watchlist.filter(p => !p.cachedData?.injury).length
+    injured: watchlist.filter(p => {
+      const injury = p.cachedData?.injury;
+      return injury && injury.found && injury.status && injury.status !== 'ACT';
+    }).length,
+    healthy: watchlist.filter(p => {
+      const injury = p.cachedData?.injury;
+      return !injury || !injury.found || !injury.status || injury.status === 'ACT';
+    }).length
   };
 
   return (

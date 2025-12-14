@@ -171,7 +171,13 @@ class PostgresWatchlistManager {
             const query = `
                 SELECT
                     COUNT(*) as total,
-                    COUNT(CASE WHEN cached_data->>'injury' IS NOT NULL THEN 1 END) as injured,
+                    COUNT(CASE
+                        WHEN cached_data->>'injury' IS NOT NULL
+                        AND (cached_data->'injury'->>'found')::boolean = true
+                        AND cached_data->'injury'->>'status' IS NOT NULL
+                        AND cached_data->'injury'->>'status' != 'ACT'
+                        THEN 1
+                    END) as injured,
                     MAX(last_checked) as last_updated
                 FROM watchlist_players
             `;

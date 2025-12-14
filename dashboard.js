@@ -97,15 +97,13 @@ class Dashboard {
         }
 
         // Injury Status
-        if (data.injury) {
+        const isInjured = data.injury && data.injury.found && data.injury.status && data.injury.status !== 'ACT';
+        if (isInjured) {
             const injury = data.injury;
             console.log('│ 🏥 INJURY STATUS: ⚠️  INJURED');
-            console.log(`│    Team: ${injury.Team} | Position: ${injury.Position}`);
-            console.log(`│    Injury: ${injury.BodyPart || 'N/A'}`);
-            console.log(`│    Status: ${injury.Status || 'Unknown'}`);
-            if (injury.Updated) {
-                console.log(`│    Updated: ${injury.Updated}`);
-            }
+            console.log(`│    Team: ${injury.team} | Position: ${injury.position}`);
+            console.log(`│    Status: ${injury.status}`);
+            console.log(`│    Jersey: #${injury.jersey || 'N/A'}`);
         } else {
             console.log('│ 🏥 INJURY STATUS: ✅ HEALTHY');
         }
@@ -177,7 +175,9 @@ class Dashboard {
 
         console.log('\n📋 WATCHLIST:\n');
         players.forEach((player, index) => {
-            const status = player.cachedData?.injury ? '⚠️  Injured' : '✅ Healthy';
+            const injury = player.cachedData?.injury;
+            const isInjured = injury && injury.found && injury.status && injury.status !== 'ACT';
+            const status = isInjured ? '⚠️  Injured' : '✅ Healthy';
             console.log(`  ${index + 1}. ${player.name} - ${status}`);
         });
         console.log('');

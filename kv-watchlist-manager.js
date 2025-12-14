@@ -119,7 +119,11 @@ class KVWatchlistManager {
     async getStats() {
         const watchlist = await this.loadWatchlist();
         const players = watchlist.players;
-        const injured = players.filter(p => p.cachedData?.injury).length;
+        // A player is injured if they have injury data AND their status is not "ACT" (Active/Healthy)
+        const injured = players.filter(p => {
+            const injury = p.cachedData?.injury;
+            return injury && injury.found && injury.status && injury.status !== 'ACT';
+        }).length;
         const healthy = players.length - injured;
 
         return {
