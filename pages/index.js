@@ -112,7 +112,7 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>NFL Player Tracking Dashboard</title>
+        <title>NFL Brand Growth Dedicated Send Tracking Dashboard</title>
         <meta name="description" content="Track NFL player injuries and media coverage" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </Head>
@@ -122,8 +122,8 @@ export default function Home() {
         <div className="header">
           <div className="header-top">
             <div>
-              <h1>🏈 NFL Player Tracking Dashboard</h1>
-              <p className="subtitle">Monitor injury status, news sentiment, and social media mentions</p>
+              <h1>NFL Brand Growth Dedicated Send Tracking Dashboard</h1>
+              <p className="subtitle">Monitor injuries, media sentiment, social media mentions and deployment date</p>
             </div>
           </div>
 
@@ -135,7 +135,7 @@ export default function Home() {
             </div>
             <div className="stat-card">
               <h3>{stats.injured}</h3>
-              <p>Currently Injured</p>
+              <p>Injured</p>
             </div>
             <div className="stat-card">
               <h3>{stats.healthy}</h3>
