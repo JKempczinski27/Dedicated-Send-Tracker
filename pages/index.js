@@ -9,28 +9,11 @@ export default function Home() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerDeploymentDate, setNewPlayerDeploymentDate] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
-  const [username, setUsername] = useState('');
   const router = useRouter();
 
   useEffect(() => {
-    checkAuth();
+    fetchWatchlist();
   }, []);
-
-  const checkAuth = async () => {
-    try {
-      const res = await fetch('/api/auth/verify');
-      if (!res.ok) {
-        router.push('/login');
-        return;
-      }
-      const data = await res.json();
-      setUsername(data.username);
-      fetchWatchlist();
-    } catch (error) {
-      console.error('Auth check failed:', error);
-      router.push('/login');
-    }
-  };
 
   const fetchWatchlist = async () => {
     try {
@@ -113,15 +96,6 @@ export default function Home() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      router.push('/login');
-    } catch (error) {
-      console.error('Logout error:', error);
-      router.push('/login');
-    }
-  };
 
   const stats = {
     total: watchlist.length,
@@ -144,10 +118,6 @@ export default function Home() {
             <div>
               <h1>🏈 NFL Player Tracking Dashboard</h1>
               <p className="subtitle">Monitor injury status, news sentiment, and social media mentions</p>
-            </div>
-            <div className="user-section">
-              <span className="username">👤 {username}</span>
-              <button onClick={handleLogout} className="logout-btn">Logout</button>
             </div>
           </div>
 
