@@ -174,7 +174,7 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Player Cards */}
+        {/* Player Table */}
         {loading ? (
           <div className="loading">Loading watchlist...</div>
         ) : watchlist.length === 0 ? (
@@ -183,14 +183,31 @@ export default function Home() {
             <p>Add players above to start tracking their injury status and media coverage.</p>
           </div>
         ) : (
-          <div className="grid">
-            {watchlist.map((player) => (
-              <PlayerCard
-                key={player.name}
-                player={player}
-                onRemove={removePlayer}
-              />
-            ))}
+          <div className="table-container">
+            <table className="players-table">
+              <thead>
+                <tr>
+                  <th>Player</th>
+                  <th>Status</th>
+                  <th>Team / Position</th>
+                  <th>Deployment</th>
+                  <th>Sentiment</th>
+                  <th>Articles</th>
+                  <th>News Alert</th>
+                  <th>Last Checked</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {watchlist.map((player) => (
+                  <PlayerRow
+                    key={player.name}
+                    player={player}
+                    onRemove={removePlayer}
+                  />
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
@@ -337,10 +354,50 @@ export default function Home() {
           background: #b91c1c !important;
         }
 
-        .grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fill, minmax(500px, 1fr));
-          gap: 20px;
+        .table-container {
+          background: white;
+          border-radius: 15px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          border-top: 4px solid #0a2463;
+          overflow-x: auto;
+        }
+
+        .players-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 0.9em;
+        }
+
+        .players-table thead {
+          background: #0a2463;
+          color: white;
+          position: sticky;
+          top: 0;
+          z-index: 10;
+        }
+
+        .players-table th {
+          padding: 15px 12px;
+          text-align: left;
+          font-weight: 600;
+          white-space: nowrap;
+          font-size: 0.85em;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .players-table tbody tr {
+          border-bottom: 1px solid #e5e7eb;
+          transition: background 0.2s;
+        }
+
+        .players-table tbody tr:hover {
+          background: #f9fafb;
+        }
+
+        .players-table td {
+          padding: 12px;
+          vertical-align: middle;
         }
 
         .loading, .empty-state {
@@ -375,10 +432,6 @@ export default function Home() {
             flex-direction: column;
           }
 
-          .grid {
-            grid-template-columns: 1fr;
-          }
-
           .add-form {
             flex-direction: column;
           }
@@ -386,25 +439,44 @@ export default function Home() {
           h1 {
             font-size: 1.8em;
           }
+
+          .players-table {
+            font-size: 0.8em;
+          }
+
+          .players-table th,
+          .players-table td {
+            padding: 8px 6px;
+          }
         }
       `}</style>
     </>
   );
 }
 
-function DeploymentDateSection({ player }) {
+function PlayerRow({ player, onRemove }) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [deploymentDate, setDeploymentDate] = useState(player.deploymentDate || '');
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditingDate, setIsEditingDate] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const handleSave = async () => {
+  const data = player.cachedData;
+  const hasData = data && player.lastChecked;
+  const injury = data?.injury;
+  const isInjured = injury && injury.found !== false &&
+                    injury.status && injury.status !== 'ACT' && injury.status !== 'Active';
+
+  const newsAnalysis = data?.news?.analysis;
+  const injuryAlert = data?.news?.injuryAlert;
+
+  const handleSaveDate = async () => {
     try {
       setIsSaving(true);
       const res = await fetch('/api/watchlist/update-deployment-date', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           playerName: player.name,
           deploymentDate: deploymentDate || null
         })
@@ -413,7 +485,7 @@ function DeploymentDateSection({ player }) {
       if (!res.ok) {
         alert('Error updating deployment date');
       } else {
-        setIsEditing(false);
+        setIsEditingDate(false);
       }
     } catch (error) {
       console.error('Error updating deployment date:', error);
@@ -423,966 +495,532 @@ function DeploymentDateSection({ player }) {
     }
   };
 
-  const handleCancel = () => {
+  const handleCancelDate = () => {
     setDeploymentDate(player.deploymentDate || '');
-    setIsEditing(false);
+    setIsEditingDate(false);
   };
-
-  return (
-    <div className="section">
-      <div className="deployment-header">
-        <div className="section-title">📅 Deployment Date</div>
-        {!isEditing && (
-          <button 
-            onClick={() => setIsEditing(true)}
-            className="edit-btn"
-          >
-            Edit
-          </button>
-        )}
-      </div>
-      
-      {isEditing ? (
-        <div className="deployment-edit">
-          <input
-            type="date"
-            value={deploymentDate}
-            onChange={(e) => setDeploymentDate(e.target.value)}
-            disabled={isSaving}
-          />
-          <div className="deployment-buttons">
-            <button 
-              onClick={handleSave}
-              disabled={isSaving}
-              className="save-btn"
-            >
-              {isSaving ? 'Saving...' : 'Save'}
-            </button>
-            <button 
-              onClick={handleCancel}
-              disabled={isSaving}
-              className="cancel-btn"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="deployment-display">
-          {deploymentDate ? (
-            <p className="deployment-date">
-              {new Date(deploymentDate + 'T00:00:00').toLocaleDateString('en-US', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
-            </p>
-          ) : (
-            <p className="no-deployment-date">No deployment date set</p>
-          )}
-        </div>
-      )}
-
-      <style jsx>{`
-        .deployment-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 12px;
-        }
-
-        .edit-btn {
-          padding: 6px 12px;
-          background: #0a2463;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.85em;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-
-        .edit-btn:hover {
-          background: #1e40af;
-        }
-
-        .deployment-edit {
-          display: flex;
-          gap: 10px;
-          align-items: center;
-        }
-
-        .deployment-edit input {
-          padding: 8px 12px;
-          border: 2px solid #e5e7eb;
-          border-radius: 6px;
-          font-size: 1em;
-          flex: 1;
-        }
-
-        .deployment-edit input:focus {
-          outline: none;
-          border-color: #0a2463;
-        }
-
-        .deployment-buttons {
-          display: flex;
-          gap: 8px;
-        }
-
-        .save-btn, .cancel-btn {
-          padding: 8px 12px;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 0.85em;
-          font-weight: 600;
-          transition: background 0.2s;
-        }
-
-        .save-btn {
-          background: #10b981;
-          color: white;
-        }
-
-        .save-btn:hover:not(:disabled) {
-          background: #059669;
-        }
-
-        .cancel-btn {
-          background: #6b7280;
-          color: white;
-        }
-
-        .cancel-btn:hover:not(:disabled) {
-          background: #4b5563;
-        }
-
-        .save-btn:disabled, .cancel-btn:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
-        }
-
-        .deployment-display {
-          padding: 10px 0;
-        }
-
-        .deployment-date {
-          font-size: 1.05em;
-          color: #0a2463;
-          font-weight: 600;
-          margin: 0;
-        }
-
-        .no-deployment-date {
-          color: #9ca3af;
-          font-style: italic;
-          margin: 0;
-        }
-      `}</style>
-    </div>
-  );
-}
-
-function PlayerCard({ player, onRemove }) {
-  const data = player.cachedData;
-  const hasData = data && player.lastChecked;
-  // Check if player is injured (works with both old and new API formats)
-  const injury = data?.injury;
-  const isInjured = injury && injury.found !== false && 
-                    injury.status && injury.status !== 'ACT' && injury.status !== 'Active';
 
   if (!hasData) {
     return (
-      <div className="player-card">
-        <div className="player-header">
-          <div className="player-name">{player.name}</div>
-          <button onClick={() => onRemove(player.name)} className="remove-btn">Remove</button>
-        </div>
-        <div className="no-data">⚠️ No data available - click "Update All" to fetch data</div>
-
-        <style jsx>{`
-          .player-card {
-            background: white;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-            border-left: 4px solid #0a2463;
-          }
-
-          .player-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-          }
-
-          .player-name {
-            font-size: 1.5em;
-            font-weight: bold;
-            color: #0a2463;
-          }
-
-          .remove-btn {
-            padding: 6px 12px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.85em;
-          }
-
-          .no-data {
-            text-align: center;
-            padding: 40px;
-            color: #6b7280;
-          }
-        `}</style>
-      </div>
+      <tr>
+        <td><strong>{player.name}</strong></td>
+        <td colSpan="7" style={{color: '#6b7280', fontStyle: 'italic'}}>No data - click "Update All"</td>
+        <td>
+          <button onClick={() => onRemove(player.name)} className="remove-btn">×</button>
+        </td>
+      </tr>
     );
   }
 
-  const newsAnalysis = data.news?.analysis;
-  const podcastCount = data.podcasts ? data.podcasts.length : 0;
-  const youtubeCount = data.youtube ? data.youtube.length : 0;
-  const redditCount = data.reddit ? data.reddit.length : 0;
-
-  // Status display mapping for Sportradar API
-  const getStatusDisplay = (status) => {
-    const statusMap = {
-      'ACT': '✅ Active (Healthy)',
-      'IR': '🚑 Injured Reserve',
-      'PRA': '📋 Practice Squad',
-      'PUP': '⚕️ Physically Unable to Perform',
-      'IRD': '🔄 IR - Designated for Return',
-      'SUS': '⛔ Suspended',
-      'PRA_IR': '📋 Practice Squad - Injured',
-      'NON': '❌ Non-Football Injury List',
-      'Active': '✅ Active (Healthy)'
-    };
-    return statusMap[status] || status || 'Unknown';
-  };
-
-  // Check for breaking injury alert
-  const injuryAlert = data.news?.injuryAlert;
-
   return (
-    <div className="player-card">
-      <div className="player-header">
-        <div className="player-name">{player.name}</div>
-        <div className="header-right">
-          <span className={`injury-badge ${isInjured ? 'injured' : 'healthy'}`}>
+    <>
+      <tr className={isInjured ? 'injured-row' : ''}>
+        <td>
+          <div className="player-name-cell">
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="expand-btn"
+              title={isExpanded ? "Collapse details" : "Expand details"}
+            >
+              {isExpanded ? '▼' : '▶'}
+            </button>
+            <strong>{player.name}</strong>
+          </div>
+        </td>
+        <td>
+          <span className={`status-badge ${isInjured ? 'injured' : 'healthy'}`}>
             {isInjured ? '⚠️ INJURED' : '✅ HEALTHY'}
           </span>
-          {newsAnalysis && (
-            <span className={`sentiment-badge ${
-              newsAnalysis.overallSentiment.score > 2 ? 'very-positive' :
-              newsAnalysis.overallSentiment.score > 0 ? 'positive' :
-              newsAnalysis.overallSentiment.score < -2 ? 'very-negative' :
-              newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral'
-            }`}>
-              {newsAnalysis.overallSentiment.score > 0 ? '📈' : 
-               newsAnalysis.overallSentiment.score < 0 ? '📉' : '➖'} 
-              {newsAnalysis.overallSentiment.label}
+        </td>
+        <td>
+          {injury && injury.found ? (
+            <div className="team-info">
+              <div><strong>{injury.team}</strong></div>
+              <div className="position">{injury.position} {injury.jersey ? `#${injury.jersey}` : ''}</div>
+            </div>
+          ) : (
+            <span style={{color: '#9ca3af'}}>—</span>
+          )}
+        </td>
+        <td>
+          {isEditingDate ? (
+            <div className="date-edit-cell">
+              <input
+                type="date"
+                value={deploymentDate}
+                onChange={(e) => setDeploymentDate(e.target.value)}
+                disabled={isSaving}
+                className="date-input"
+              />
+              <button onClick={handleSaveDate} disabled={isSaving} className="save-btn-sm">✓</button>
+              <button onClick={handleCancelDate} disabled={isSaving} className="cancel-btn-sm">✗</button>
+            </div>
+          ) : (
+            <div className="date-display-cell" onClick={() => setIsEditingDate(true)} title="Click to edit">
+              {deploymentDate ? (
+                new Date(deploymentDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              ) : (
+                <span style={{color: '#9ca3af', cursor: 'pointer'}}>Set date</span>
+              )}
+            </div>
+          )}
+        </td>
+        <td>
+          {newsAnalysis ? (
+            <div className="sentiment-cell">
+              <span className={`sentiment-badge-sm ${
+                newsAnalysis.overallSentiment.score > 2 ? 'very-positive' :
+                newsAnalysis.overallSentiment.score > 0 ? 'positive' :
+                newsAnalysis.overallSentiment.score < -2 ? 'very-negative' :
+                newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral'
+              }`}>
+                {newsAnalysis.overallSentiment.score > 0 ? '📈' :
+                 newsAnalysis.overallSentiment.score < 0 ? '📉' : '➖'}
+                {newsAnalysis.overallSentiment.score}
+              </span>
+            </div>
+          ) : (
+            <span style={{color: '#9ca3af'}}>—</span>
+          )}
+        </td>
+        <td>
+          {newsAnalysis ? (
+            <div className="articles-cell">
+              <strong>{newsAnalysis.total}</strong>
+              <div className="sentiment-mini-bar">
+                {newsAnalysis.breakdown.positive.percentage > 0 && (
+                  <div className="bar-positive" style={{width: `${newsAnalysis.breakdown.positive.percentage}%`}} title={`${newsAnalysis.breakdown.positive.percentage}% positive`}></div>
+                )}
+                {newsAnalysis.breakdown.neutral.percentage > 0 && (
+                  <div className="bar-neutral" style={{width: `${newsAnalysis.breakdown.neutral.percentage}%`}} title={`${newsAnalysis.breakdown.neutral.percentage}% neutral`}></div>
+                )}
+                {newsAnalysis.breakdown.negative.percentage > 0 && (
+                  <div className="bar-negative" style={{width: `${newsAnalysis.breakdown.negative.percentage}%`}} title={`${newsAnalysis.breakdown.negative.percentage}% negative`}></div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <span style={{color: '#9ca3af'}}>—</span>
+          )}
+        </td>
+        <td>
+          {injuryAlert && injuryAlert.detected ? (
+            <span className="alert-badge" title={`${injuryAlert.count} recent injury articles`}>
+              🚨 {injuryAlert.count}
             </span>
+          ) : (
+            <span style={{color: '#9ca3af'}}>—</span>
           )}
-          <button onClick={() => onRemove(player.name)} className="remove-btn">×</button>
-        </div>
-      </div>
-
-      {/* Breaking Injury Alert */}
-      {injuryAlert && injuryAlert.detected && (
-        <div className="injury-alert">
-          <div className="alert-header">
-            <span className="alert-icon">🚨</span>
-            <span className="alert-title">BREAKING INJURY NEWS</span>
+        </td>
+        <td>
+          <div className="timestamp">
+            {new Date(player.lastChecked).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+            <div className="time">{new Date(player.lastChecked).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</div>
           </div>
-          <div className="alert-content">
-            <p className="alert-message">
-              ⚠️ {injuryAlert.count} recent {injuryAlert.count === 1 ? 'article' : 'articles'} with injury keywords detected in the last 48 hours.
-              Official roster status may not be updated yet.
-            </p>
-            <div className="alert-article">
-              <p className="alert-article-title">{injuryAlert.mostRecentArticle.title}</p>
-              <p className="alert-article-meta">
-                {injuryAlert.mostRecentArticle.source} • {injuryAlert.mostRecentArticle.hoursAgo}h ago
-              </p>
-              <a href={injuryAlert.mostRecentArticle.url} target="_blank" rel="noopener noreferrer" className="alert-link">
-                Read Article →
-              </a>
+        </td>
+        <td>
+          <button onClick={() => onRemove(player.name)} className="remove-btn" title="Remove player">×</button>
+        </td>
+      </tr>
+
+      {isExpanded && (
+        <tr className="expanded-row">
+          <td colSpan="9">
+            <div className="expanded-content">
+              {/* Injury Details */}
+              {injury && injury.found && (
+                <div className="detail-section">
+                  <h4>🏥 Player Status</h4>
+                  <div className="detail-grid">
+                    <div><strong>Status:</strong> {injury.status}</div>
+                    {injury.BodyPart && <div><strong>Injury:</strong> {injury.BodyPart}</div>}
+                  </div>
+                </div>
+              )}
+
+              {/* Breaking Injury Alert */}
+              {injuryAlert && injuryAlert.detected && (
+                <div className="detail-section alert-section">
+                  <h4>🚨 BREAKING INJURY NEWS</h4>
+                  <p>⚠️ {injuryAlert.count} recent article{injuryAlert.count !== 1 ? 's' : ''} with injury keywords detected in the last 48 hours.</p>
+                  {injuryAlert.mostRecentArticle && (
+                    <div className="alert-article">
+                      <a href={injuryAlert.mostRecentArticle.url} target="_blank" rel="noopener noreferrer">
+                        {injuryAlert.mostRecentArticle.title}
+                      </a>
+                      <div className="article-meta-sm">
+                        {injuryAlert.mostRecentArticle.source} • {injuryAlert.mostRecentArticle.hoursAgo}h ago
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Sentiment Analysis */}
+              {newsAnalysis && (
+                <div className="detail-section">
+                  <h4>📰 News Sentiment Analysis</h4>
+                  <div className="detail-grid">
+                    <div>
+                      <strong>Overall:</strong> {newsAnalysis.overallSentiment.label} ({newsAnalysis.overallSentiment.score})
+                    </div>
+                    <div>
+                      <strong>Breakdown:</strong> {newsAnalysis.breakdown.positive.percentage}% pos, {newsAnalysis.breakdown.neutral.percentage}% neutral, {newsAnalysis.breakdown.negative.percentage}% neg
+                    </div>
+                    {newsAnalysis.sourceComparison && newsAnalysis.sourceComparison.national.count > 0 && (
+                      <>
+                        <div>
+                          <strong>National:</strong> {newsAnalysis.sourceComparison.national.avgSentiment} ({newsAnalysis.sourceComparison.national.count} articles)
+                        </div>
+                        <div>
+                          <strong>Local:</strong> {newsAnalysis.sourceComparison.local.avgSentiment} ({newsAnalysis.sourceComparison.local.count} articles)
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Recent Articles */}
+              {newsAnalysis && newsAnalysis.total > 0 && data.news?.articles && (
+                <div className="detail-section">
+                  <h4>📰 Recent Articles</h4>
+                  <div className="articles-list-compact">
+                    {data.news.articles.slice(0, 5).map((article, idx) => (
+                      <div key={idx} className="article-compact">
+                        <a href={article.url} target="_blank" rel="noopener noreferrer">
+                          {article.title}
+                        </a>
+                        <div className="article-meta-sm">
+                          <span className={`sentiment-label ${article.sentiment.score > 0 ? 'positive' : article.sentiment.score < 0 ? 'negative' : 'neutral'}`}>
+                            {article.sentiment.label}
+                          </span>
+                          <span>{article.source}</span>
+                          <span>{article.publishedAt}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
+          </td>
+        </tr>
       )}
-
-      {/* Injury Details */}
-      {injury && injury.found && (
-        <div className="section">
-          <div className="section-title">🏥 Player Status</div>
-          <div className="injury-details">
-            <p><strong>Name:</strong> {injury.name}</p>
-            <p><strong>Team:</strong> {injury.team || injury.Team} {injury.teamAlias ? `(${injury.teamAlias})` : ''}</p>
-            <p><strong>Position:</strong> {injury.position || injury.Position}</p>
-            {injury.jersey && <p><strong>Jersey:</strong> #{injury.jersey}</p>}
-            <p><strong>Status:</strong> {getStatusDisplay(injury.status || injury.Status)}</p>
-            {injury.BodyPart && <p><strong>Injury:</strong> {injury.BodyPart}</p>}
-          </div>
-        </div>
-      )}
-      
-      {injury && !injury.found && (
-        <div className="section">
-          <div className="section-title">🏥 Player Status</div>
-          <div className="injury-details">
-            <p>⚠️ Player not found in Sportradar database</p>
-          </div>
-        </div>
-      )}
-
-      {/* Deployment Date */}
-      <DeploymentDateSection player={player} />
-
-      {/* News Sentiment */}
-      {newsAnalysis && (
-        <div className="section">
-          <div className="section-title">📰 News Sentiment Analysis</div>
-          <div className={`sentiment-score ${newsAnalysis.overallSentiment.score > 0 ? 'positive' : newsAnalysis.overallSentiment.score < 0 ? 'negative' : 'neutral'}`}>
-            {newsAnalysis.overallSentiment.label} ({newsAnalysis.overallSentiment.score})
-          </div>
-          <p className="article-count">{newsAnalysis.total} articles analyzed (last 7 days)</p>
-          
-          <div className="sentiment-bar">
-            {newsAnalysis.breakdown.positive.percentage > 0 && (
-              <div className="sentiment-positive" style={{width: `${newsAnalysis.breakdown.positive.percentage}%`}}>
-                {newsAnalysis.breakdown.positive.percentage}%
-              </div>
-            )}
-            {newsAnalysis.breakdown.neutral.percentage > 0 && (
-              <div className="sentiment-neutral" style={{width: `${newsAnalysis.breakdown.neutral.percentage}%`}}>
-                {newsAnalysis.breakdown.neutral.percentage}%
-              </div>
-            )}
-            {newsAnalysis.breakdown.negative.percentage > 0 && (
-              <div className="sentiment-negative" style={{width: `${newsAnalysis.breakdown.negative.percentage}%`}}>
-                {newsAnalysis.breakdown.negative.percentage}%
-              </div>
-            )}
-          </div>
-
-          {newsAnalysis.sourceComparison.national.count > 0 && newsAnalysis.sourceComparison.local.count > 0 && (
-            <div className="media-comparison">
-              <div className="comparison-header">
-                <strong>📊 Media Perception</strong>
-              </div>
-              <div className="comparison-grid">
-                <div className="comparison-card">
-                  <div className="comparison-label">🌐 National Media</div>
-                  <div className={`comparison-value ${
-                    parseFloat(newsAnalysis.sourceComparison.national.avgSentiment) > 0 ? 'positive' :
-                    parseFloat(newsAnalysis.sourceComparison.national.avgSentiment) < 0 ? 'negative' : 'neutral'
-                  }`}>
-                    {newsAnalysis.sourceComparison.national.avgSentiment}
-                  </div>
-                  <div className="comparison-label-small">{newsAnalysis.sourceComparison.national.label}</div>
-                  <div className="comparison-count">{newsAnalysis.sourceComparison.national.count} articles</div>
-                </div>
-                <div className="comparison-card">
-                  <div className="comparison-label">🏠 Local Media</div>
-                  <div className={`comparison-value ${
-                    parseFloat(newsAnalysis.sourceComparison.local.avgSentiment) > 0 ? 'positive' :
-                    parseFloat(newsAnalysis.sourceComparison.local.avgSentiment) < 0 ? 'negative' : 'neutral'
-                  }`}>
-                    {newsAnalysis.sourceComparison.local.avgSentiment}
-                  </div>
-                  <div className="comparison-label-small">{newsAnalysis.sourceComparison.local.label}</div>
-                  <div className="comparison-count">{newsAnalysis.sourceComparison.local.count} articles</div>
-                </div>
-                <div className="comparison-card highlight">
-                  <div className="comparison-label">📈 Difference</div>
-                  <div className={`comparison-value ${
-                    parseFloat(newsAnalysis.sourceComparison.difference) > 2 ? 'very-positive' :
-                    parseFloat(newsAnalysis.sourceComparison.difference) > 0 ? 'positive' :
-                    parseFloat(newsAnalysis.sourceComparison.difference) < -2 ? 'very-negative' :
-                    parseFloat(newsAnalysis.sourceComparison.difference) < 0 ? 'negative' : 'neutral'
-                  }`}>
-                    {newsAnalysis.sourceComparison.difference > 0 ? '+' : ''}{newsAnalysis.sourceComparison.difference}
-                  </div>
-                  <div className="comparison-info">
-                    {parseFloat(newsAnalysis.sourceComparison.difference) > 0 
-                      ? 'Local media more positive' 
-                      : parseFloat(newsAnalysis.sourceComparison.difference) < 0 
-                      ? 'National media more positive' 
-                      : 'Similar coverage'}
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Top News Articles */}
-      {newsAnalysis && newsAnalysis.total > 0 && (
-        <div className="section">
-          <div className="section-title">📰 Recent News Articles</div>
-          <div className="articles-list">
-            {data.news?.articles?.slice(0, 5).map((article, idx) => (
-              <div key={idx} className="article-item">
-                <div className="article-header">
-                  <a href={article.url} target="_blank" rel="noopener noreferrer" className="article-title">
-                    {article.title}
-                  </a>
-                  <span className={`article-sentiment ${
-                    article.sentiment.score > 2 ? 'very-positive' :
-                    article.sentiment.score > 0 ? 'positive' :
-                    article.sentiment.score < -2 ? 'very-negative' :
-                    article.sentiment.score < 0 ? 'negative' : 'neutral'
-                  }`}>
-                    {article.sentiment.label}
-                  </span>
-                </div>
-                <div className="article-meta">
-                  <span className="article-source">{article.source}</span>
-                  <span className="article-source-type">{article.sourceType === 'national' ? '🌐 National' : article.sourceType === 'local' ? '🏠 Local' : '📰 Other'}</span>
-                  <span className="article-date">{article.publishedAt}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <p className="last-checked">Last checked: {new Date(player.lastChecked).toLocaleString()}</p>
 
       <style jsx>{`
-        .player-card {
-          background: white;
-          border-radius: 15px;
-          padding: 25px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-          border-left: 4px solid #0a2463;
-          transition: transform 0.2s, box-shadow 0.2s;
-        }
-
-        .player-card:hover {
-          transform: translateY(-5px);
-          box-shadow: 0 8px 30px rgba(10,36,99,0.15);
-          border-left-color: #dc2626;
-        }
-
-        .player-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 20px;
-          padding-bottom: 15px;
-          border-bottom: 2px solid #e5e7eb;
-        }
-
-        .player-name {
-          font-size: 1.5em;
-          font-weight: bold;
-          color: #0a2463;
-        }
-
-        .header-right {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-
-        .injury-badge {
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-weight: bold;
-          font-size: 0.85em;
-        }
-
-        .injury-badge.healthy {
-          background: #10b981;
-          color: white;
-        }
-
-        .injury-badge.injured {
-          background: #dc2626;
-          color: white;
-        }
-
-        .sentiment-badge {
-          padding: 8px 16px;
-          border-radius: 20px;
-          font-weight: bold;
-          font-size: 0.85em;
-          display: flex;
-          align-items: center;
-          gap: 5px;
-        }
-
-        .sentiment-badge.very-positive {
-          background: #10b981;
-          color: white;
-        }
-
-        .sentiment-badge.positive {
-          background: #34d399;
-          color: white;
-        }
-
-        .sentiment-badge.neutral {
-          background: #6b7280;
-          color: white;
-        }
-
-        .sentiment-badge.negative {
-          background: #f59e0b;
-          color: white;
-        }
-
-        .sentiment-badge.very-negative {
-          background: #dc2626;
-          color: white;
-        }
-
-        .remove-btn {
-          padding: 4px 10px;
-          background: #6b7280;
-          color: white;
-          border: none;
-          border-radius: 6px;
-          cursor: pointer;
-          font-size: 1.2em;
-          line-height: 1;
-        }
-
-        .remove-btn:hover {
-          background: #dc2626;
-        }
-
-        .section {
-          margin-bottom: 20px;
-        }
-
-        .section-title {
-          font-size: 0.9em;
-          font-weight: bold;
-          color: #0a2463;
-          margin-bottom: 8px;
-          text-transform: uppercase;
-          letter-spacing: 0.5px;
-        }
-
-        .injury-details {
+        .injured-row {
           background: #fef2f2;
-          border-left: 4px solid #dc2626;
-          padding: 12px;
-          border-radius: 5px;
         }
 
-        .injury-details p {
-          margin: 5px 0;
-          color: #374151;
-        }
-
-        .injury-alert {
-          background: linear-gradient(135deg, #fee2e2 0%, #fef2f2 100%);
-          border: 2px solid #dc2626;
-          border-radius: 10px;
-          padding: 15px;
-          margin-bottom: 15px;
-          box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
-          animation: pulse-border 2s infinite;
-        }
-
-        @keyframes pulse-border {
-          0%, 100% {
-            box-shadow: 0 4px 15px rgba(220, 38, 38, 0.2);
-          }
-          50% {
-            box-shadow: 0 4px 25px rgba(220, 38, 38, 0.4);
-          }
-        }
-
-        .alert-header {
+        .player-name-cell {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 10px;
+          gap: 8px;
         }
 
-        .alert-icon {
-          font-size: 1.5em;
-          animation: blink 1.5s infinite;
-        }
-
-        @keyframes blink {
-          0%, 50%, 100% { opacity: 1; }
-          25%, 75% { opacity: 0.4; }
-        }
-
-        .alert-title {
-          font-weight: bold;
-          color: #dc2626;
-          font-size: 1.1em;
-          letter-spacing: 0.5px;
-        }
-
-        .alert-content {
-          margin-left: 35px;
-        }
-
-        .alert-message {
-          color: #991b1b;
-          margin-bottom: 10px;
-          font-weight: 500;
-        }
-
-        .alert-article {
-          background: white;
-          padding: 12px;
-          border-radius: 6px;
-          border-left: 3px solid #dc2626;
-        }
-
-        .alert-article-title {
-          font-weight: 600;
-          color: #0a2463;
-          margin-bottom: 5px;
-          font-size: 0.95em;
-        }
-
-        .alert-article-meta {
+        .expand-btn {
+          background: none;
+          border: none;
+          cursor: pointer;
+          font-size: 0.8em;
           color: #6b7280;
-          font-size: 0.85em;
-          margin-bottom: 8px;
-        }
-
-        .alert-link {
-          color: #dc2626;
-          text-decoration: none;
-          font-weight: 600;
-          font-size: 0.9em;
-          display: inline-block;
+          padding: 4px;
           transition: color 0.2s;
         }
 
-        .alert-link:hover {
-          color: #991b1b;
-          text-decoration: underline;
-        }
-
-        .sentiment-score {
-          font-size: 1.5em;
-          font-weight: bold;
-          margin-bottom: 10px;
-        }
-
-        .sentiment-score.positive { color: #10b981; }
-        .sentiment-score.neutral { color: #6b7280; }
-        .sentiment-score.negative { color: #dc2626; }
-
-        .sentiment-bar {
-          display: flex;
-          height: 30px;
-          border-radius: 5px;
-          overflow: hidden;
-          margin-bottom: 10px;
-        }
-
-        .sentiment-positive {
-          background: #10b981;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.8em;
-          font-weight: bold;
-        }
-
-        .sentiment-neutral {
-          background: #6b7280;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.8em;
-          font-weight: bold;
-        }
-
-        .sentiment-negative {
-          background: #dc2626;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          color: white;
-          font-size: 0.8em;
-          font-weight: bold;
-        }
-
-        .article-count {
-          color: #6b7280;
-          font-size: 0.9em;
-          margin-bottom: 10px;
-        }
-
-        .comparison {
-          display: flex;
-          gap: 15px;
-          margin-top: 10px;
-        }
-
-        .comparison-item {
-          flex: 1;
-          background: #f9fafb;
-          padding: 10px;
-          border-radius: 5px;
-          text-align: center;
-          border: 1px solid #e5e7eb;
-        }
-
-        .comparison-item strong {
-          display: block;
-          color: #6b7280;
-          font-size: 0.8em;
-          margin-bottom: 5px;
-        }
-
-        .comparison-item span {
-          font-size: 1.3em;
-          font-weight: bold;
+        .expand-btn:hover {
           color: #0a2463;
         }
 
-        .media-comparison {
-          margin-top: 15px;
-          background: #f9fafb;
-          padding: 15px;
-          border-radius: 8px;
-          border: 1px solid #e5e7eb;
-        }
-
-        .comparison-header {
-          margin-bottom: 15px;
-          font-size: 1em;
-          color: #0a2463;
-        }
-
-        .comparison-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 12px;
-        }
-
-        .comparison-card {
-          background: white;
-          padding: 15px;
-          border-radius: 8px;
-          text-align: center;
-          border: 2px solid #e5e7eb;
-          transition: transform 0.2s;
-        }
-
-        .comparison-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .comparison-card.highlight {
-          border-color: #0a2463;
-          background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
-        }
-
-        .comparison-label {
-          font-size: 0.85em;
-          color: #6b7280;
-          font-weight: 600;
-          margin-bottom: 8px;
-        }
-
-        .comparison-label-small {
-          font-size: 0.75em;
-          color: #9ca3af;
-          margin-top: 5px;
-          font-weight: 500;
-        }
-
-        .comparison-value {
-          font-size: 2em;
-          font-weight: bold;
-          margin: 8px 0;
-        }
-
-        .comparison-value.very-positive {
-          color: #10b981;
-        }
-
-        .comparison-value.positive {
-          color: #34d399;
-        }
-
-        .comparison-value.neutral {
-          color: #6b7280;
-        }
-
-        .comparison-value.negative {
-          color: #f59e0b;
-        }
-
-        .comparison-value.very-negative {
-          color: #dc2626;
-        }
-
-        .comparison-count {
-          font-size: 0.75em;
-          color: #9ca3af;
-          margin-top: 5px;
-        }
-
-        .comparison-info {
-          font-size: 0.75em;
-          color: #6b7280;
-          margin-top: 8px;
-          padding: 6px;
-          background: rgba(10, 36, 99, 0.05);
-          border-radius: 4px;
-          font-weight: 500;
-        }
-
-        .mentions {
-          display: flex;
-          gap: 10px;
-        }
-
-        .mention-badge {
-          background: #f9fafb;
-          padding: 10px 15px;
-          border-radius: 5px;
-          text-align: center;
-          flex: 1;
-          border: 1px solid #e5e7eb;
-        }
-
-        .mention-badge strong {
-          display: block;
-          font-size: 1.5em;
-          color: #dc2626;
-          margin-bottom: 3px;
-        }
-
-        .mention-badge span {
-          font-size: 0.8em;
-          color: #6b7280;
-        }
-
-        .articles-list {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-        }
-
-        .article-item {
-          background: #f9fafb;
-          padding: 12px;
-          border-radius: 8px;
-          border-left: 3px solid #0a2463;
-          transition: all 0.2s;
-        }
-
-        .article-item:hover {
-          background: #f3f4f6;
-          border-left-color: #dc2626;
-          transform: translateX(3px);
-        }
-
-        .article-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: flex-start;
-          gap: 10px;
-          margin-bottom: 8px;
-        }
-
-        .article-title {
-          color: #0a2463;
-          font-weight: 600;
-          font-size: 0.95em;
-          text-decoration: none;
-          flex: 1;
-          line-height: 1.4;
-        }
-
-        .article-title:hover {
-          color: #dc2626;
-          text-decoration: underline;
-        }
-
-        .article-sentiment {
+        .status-badge {
+          display: inline-block;
           padding: 4px 10px;
           border-radius: 12px;
-          font-size: 0.75em;
           font-weight: 600;
+          font-size: 0.75em;
           white-space: nowrap;
-          flex-shrink: 0;
         }
 
-        .article-sentiment.very-positive {
+        .status-badge.healthy {
           background: #d1fae5;
           color: #065f46;
         }
 
-        .article-sentiment.positive {
-          background: #dbeafe;
-          color: #1e40af;
-        }
-
-        .article-sentiment.neutral {
-          background: #e5e7eb;
-          color: #374151;
-        }
-
-        .article-sentiment.negative {
-          background: #fed7aa;
-          color: #92400e;
-        }
-
-        .article-sentiment.very-negative {
+        .status-badge.injured {
           background: #fecaca;
           color: #991b1b;
         }
 
-        .article-meta {
-          display: flex;
-          gap: 12px;
-          align-items: center;
-          font-size: 0.8em;
+        .team-info {
+          line-height: 1.4;
+        }
+
+        .position {
+          font-size: 0.85em;
           color: #6b7280;
         }
 
-        .article-source {
+        .date-edit-cell {
+          display: flex;
+          gap: 4px;
+          align-items: center;
+        }
+
+        .date-input {
+          padding: 4px 6px;
+          border: 1px solid #e5e7eb;
+          border-radius: 4px;
+          font-size: 0.85em;
+          width: 130px;
+        }
+
+        .save-btn-sm, .cancel-btn-sm {
+          padding: 4px 8px;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 0.9em;
+          font-weight: bold;
+        }
+
+        .save-btn-sm {
+          background: #10b981;
+          color: white;
+        }
+
+        .cancel-btn-sm {
+          background: #6b7280;
+          color: white;
+        }
+
+        .save-btn-sm:hover:not(:disabled) {
+          background: #059669;
+        }
+
+        .cancel-btn-sm:hover:not(:disabled) {
+          background: #4b5563;
+        }
+
+        .date-display-cell {
+          cursor: pointer;
+          transition: color 0.2s;
+        }
+
+        .date-display-cell:hover {
+          color: #0a2463;
+          text-decoration: underline;
+        }
+
+        .sentiment-cell {
+          text-align: center;
+        }
+
+        .sentiment-badge-sm {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 10px;
           font-weight: 600;
+          font-size: 0.75em;
+          white-space: nowrap;
+        }
+
+        .sentiment-badge-sm.very-positive {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .sentiment-badge-sm.positive {
+          background: #dbeafe;
+          color: #1e40af;
+        }
+
+        .sentiment-badge-sm.neutral {
+          background: #e5e7eb;
           color: #374151;
         }
 
-        .article-source-type {
-          padding: 2px 8px;
+        .sentiment-badge-sm.negative {
+          background: #fed7aa;
+          color: #92400e;
+        }
+
+        .sentiment-badge-sm.very-negative {
+          background: #fecaca;
+          color: #991b1b;
+        }
+
+        .articles-cell {
+          text-align: center;
+        }
+
+        .sentiment-mini-bar {
+          display: flex;
+          height: 4px;
+          border-radius: 2px;
+          overflow: hidden;
+          margin-top: 4px;
+          background: #e5e7eb;
+        }
+
+        .bar-positive {
+          background: #10b981;
+        }
+
+        .bar-neutral {
+          background: #6b7280;
+        }
+
+        .bar-negative {
+          background: #dc2626;
+        }
+
+        .alert-badge {
+          display: inline-block;
+          padding: 4px 8px;
+          border-radius: 10px;
+          background: #fecaca;
+          color: #991b1b;
+          font-weight: 600;
+          font-size: 0.75em;
+          white-space: nowrap;
+        }
+
+        .timestamp {
+          font-size: 0.85em;
+          line-height: 1.3;
+        }
+
+        .time {
+          color: #6b7280;
+          font-size: 0.9em;
+        }
+
+        .remove-btn {
+          padding: 4px 8px;
+          background: #dc2626;
+          color: white;
+          border: none;
+          border-radius: 4px;
+          cursor: pointer;
+          font-size: 1.2em;
+          line-height: 1;
+          transition: background 0.2s;
+        }
+
+        .remove-btn:hover {
+          background: #b91c1c;
+        }
+
+        .expanded-row {
+          background: #f9fafb;
+        }
+
+        .expanded-content {
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .detail-section {
+          background: white;
+          padding: 15px;
+          border-radius: 8px;
+          border-left: 3px solid #0a2463;
+        }
+
+        .detail-section h4 {
+          margin: 0 0 12px 0;
+          color: #0a2463;
+          font-size: 1em;
+        }
+
+        .detail-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 8px;
+          font-size: 0.9em;
+        }
+
+        .alert-section {
+          border-left-color: #dc2626;
+          background: #fef2f2;
+        }
+
+        .alert-article {
+          margin-top: 10px;
+          padding: 10px;
           background: white;
           border-radius: 4px;
-          font-size: 0.9em;
-          border: 1px solid #e5e7eb;
         }
 
-        .article-date {
-          margin-left: auto;
+        .alert-article a {
+          color: #0a2463;
+          font-weight: 600;
+          text-decoration: none;
         }
 
-        .last-checked {
-          color: #6b7280;
+        .alert-article a:hover {
+          text-decoration: underline;
+        }
+
+        .article-meta-sm {
           font-size: 0.85em;
-          margin-top: 15px;
+          color: #6b7280;
+          margin-top: 4px;
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .articles-list-compact {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+
+        .article-compact {
+          padding: 10px;
+          background: #f9fafb;
+          border-radius: 4px;
+          border-left: 2px solid #0a2463;
+        }
+
+        .article-compact a {
+          color: #0a2463;
+          font-weight: 600;
+          text-decoration: none;
+          font-size: 0.9em;
+        }
+
+        .article-compact a:hover {
+          text-decoration: underline;
+        }
+
+        .sentiment-label {
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 600;
+          font-size: 0.9em;
+        }
+
+        .sentiment-label.positive {
+          background: #d1fae5;
+          color: #065f46;
+        }
+
+        .sentiment-label.neutral {
+          background: #e5e7eb;
+          color: #374151;
+        }
+
+        .sentiment-label.negative {
+          background: #fecaca;
+          color: #991b1b;
         }
       `}</style>
-    </div>
+    </>
   );
 }
+
