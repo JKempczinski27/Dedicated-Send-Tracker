@@ -76,11 +76,17 @@ class Dashboard {
             this._displayPlayerCard(player, index + 1);
         });
 
+        // Display analytics section
+        this._displayAnalyticsSection(players);
+
         console.log('═'.repeat(80));
         console.log('Commands:');
-        console.log('  Update dashboard: npm run dashboard');
-        console.log('  Add player:       npm run dashboard add "Player Name"');
-        console.log('  Remove player:    npm run dashboard remove "Player Name"');
+        console.log('  Update dashboard:     npm run dashboard');
+        console.log('  Add player:           npm run dashboard add "Player Name"');
+        console.log('  Remove player:        npm run dashboard remove "Player Name"');
+        console.log('  Log creative usage:   npm run dashboard creative "Player Name" [interactions]');
+        console.log('  Update analytics:     npm run dashboard analytics "Player Name"');
+        console.log('  Show analytics:       npm run dashboard analytics-only');
         console.log('═'.repeat(80) + '\n');
     }
 
@@ -148,6 +154,82 @@ class Dashboard {
         return '😞';
     }
 
+    // Display analytics section
+    _displayAnalyticsSection(players) {
+        console.log('═'.repeat(80));
+        console.log('📊 CREATIVE ANALYTICS TRACKER');
+        console.log('═'.repeat(80) + '\n');
+
+        if (players.length === 0) {
+            console.log('No players to track.\n');
+            return;
+        }
+
+        // Table header
+        console.log('┌────────────────────────────────┬─────────────────┬─────────────────────┬──────────────┐');
+        console.log('│ Player Name                    │ Creative Posts  │ Last Creative       │ Interactions │');
+        console.log('├────────────────────────────────┼─────────────────┼─────────────────────┼──────────────┤');
+
+        players.forEach(player => {
+            // Initialize analytics if it doesn't exist
+            if (!player.analytics) {
+                player.analytics = {
+                    creativeUsageCount: 0,
+                    lastCreativeDate: null,
+                    postInteractions: 0
+                };
+            }
+
+            const name = player.name.padEnd(30).substring(0, 30);
+            const usageCount = String(player.analytics.creativeUsageCount).padEnd(15);
+            const lastDate = player.analytics.lastCreativeDate
+                ? new Date(player.analytics.lastCreativeDate).toLocaleDateString().padEnd(19)
+                : 'Never'.padEnd(19);
+            const interactions = String(player.analytics.postInteractions).padEnd(12);
+
+            console.log(`│ ${name} │ ${usageCount} │ ${lastDate} │ ${interactions} │`);
+        });
+
+        console.log('└────────────────────────────────┴─────────────────┴─────────────────────┴──────────────┘\n');
+    }
+
+    // Display only analytics
+    displayAnalyticsOnly() {
+        const players = this.watchlist.getPlayers();
+
+        console.log('\n' + '═'.repeat(80));
+        console.log('📊 CREATIVE ANALYTICS TRACKER');
+        console.log('═'.repeat(80) + '\n');
+
+        if (players.length === 0) {
+            console.log('No players to track.\n');
+            return;
+        }
+
+        // Detailed analytics for each player
+        players.forEach((player, index) => {
+            if (!player.analytics) {
+                player.analytics = {
+                    creativeUsageCount: 0,
+                    lastCreativeDate: null,
+                    postInteractions: 0
+                };
+            }
+
+            console.log(`┌─ [${index + 1}] ${player.name.toUpperCase()} ${'─'.repeat(70 - player.name.length)}`);
+            console.log(`│ 📈 Creative Posts: ${player.analytics.creativeUsageCount}`);
+            console.log(`│ 📅 Last Creative: ${player.analytics.lastCreativeDate ? new Date(player.analytics.lastCreativeDate).toLocaleString() : 'Never'}`);
+            console.log(`│ 💬 Last Post Interactions: ${player.analytics.postInteractions}`);
+            console.log('└' + '─'.repeat(78) + '\n');
+        });
+
+        console.log('═'.repeat(80));
+        console.log('Commands:');
+        console.log('  Log creative usage:   npm run dashboard creative "Player Name" [interactions]');
+        console.log('  Update analytics:     npm run dashboard analytics "Player Name"');
+        console.log('═'.repeat(80) + '\n');
+    }
+
     // Add player to watchlist
     addPlayer(playerName) {
         const result = this.watchlist.addPlayer(playerName);
@@ -187,6 +269,68 @@ class Dashboard {
     clearAll() {
         const result = this.watchlist.clearWatchlist();
         console.log(`\n${result.success ? '✅' : '❌'} ${result.message}\n`);
+    }
+
+    // Log creative usage
+    logCreativeUsage(playerName, interactions) {
+        const result = this.watchlist.incrementCreativeUsage(playerName, interactions);
+        console.log(`\n${result.success ? '✅' : '❌'} ${result.message}\n`);
+    }
+
+    // Update player analytics
+    updateAnalytics(playerName) {
+        const readline = require('readline');
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+        });
+
+        const analytics = this.watchlist.getPlayerAnalytics(playerName);
+        if (!analytics) {
+            console.log(`\n❌ Player "${playerName}" not found on watchlist\n`);
+            rl.close();
+            return;
+        }
+
+        console.log(`\n📊 Update Analytics for ${playerName}`);
+        console.log(`Current values:`);
+        console.log(`  Creative Posts: ${analytics.creativeUsageCount}`);
+        console.log(`  Last Creative: ${analytics.lastCreativeDate ? new Date(analytics.lastCreativeDate).toLocaleString() : 'Never'}`);
+        console.log(`  Post Interactions: ${analytics.postInteractions}\n`);
+
+        rl.question('Creative Posts Count (press Enter to skip): ', (usageCount) => {
+            rl.question('Last Creative Date (YYYY-MM-DD, press Enter to skip): ', (lastDate) => {
+                rl.question('Post Interactions (press Enter to skip): ', (interactions) => {
+                    const analyticsData = {};
+
+                    if (usageCount.trim() !== '') {
+                        const count = parseInt(usageCount);
+                        if (!isNaN(count)) {
+                            analyticsData.creativeUsageCount = count;
+                        }
+                    }
+
+                    if (lastDate.trim() !== '') {
+                        const date = new Date(lastDate);
+                        if (!isNaN(date.getTime())) {
+                            analyticsData.lastCreativeDate = date.toISOString();
+                        }
+                    }
+
+                    if (interactions.trim() !== '') {
+                        const count = parseInt(interactions);
+                        if (!isNaN(count)) {
+                            analyticsData.postInteractions = count;
+                        }
+                    }
+
+                    const result = this.watchlist.updatePlayerAnalytics(playerName, analyticsData);
+                    console.log(`\n${result.success ? '✅' : '❌'} ${result.message}\n`);
+
+                    rl.close();
+                });
+            });
+        });
     }
 
     _delay(ms) {
@@ -241,15 +385,42 @@ async function main() {
             dashboard.displayDashboard();
             break;
 
+        case 'creative':
+            if (args.length < 2) {
+                console.log('\nUsage: npm run dashboard creative "Player Name" [interactions]\n');
+                process.exit(1);
+            }
+            const playerName = args.slice(1, args.length - 1).join(' ');
+            const lastArg = args[args.length - 1];
+            const interactions = !isNaN(parseInt(lastArg)) ? parseInt(lastArg) : 0;
+            const creativePlayerName = !isNaN(parseInt(lastArg)) ? playerName : args.slice(1).join(' ');
+            dashboard.logCreativeUsage(creativePlayerName, interactions);
+            break;
+
+        case 'analytics':
+            if (args.length < 2) {
+                console.log('\nUsage: npm run dashboard analytics "Player Name"\n');
+                process.exit(1);
+            }
+            dashboard.updateAnalytics(args.slice(1).join(' '));
+            break;
+
+        case 'analytics-only':
+            dashboard.displayAnalyticsOnly();
+            break;
+
         default:
             console.log('\nUnknown command. Available commands:');
-            console.log('  npm run dashboard          - Update and show dashboard');
-            console.log('  npm run dashboard add      - Add player to watchlist');
-            console.log('  npm run dashboard remove   - Remove player from watchlist');
-            console.log('  npm run dashboard list     - List all players');
-            console.log('  npm run dashboard show     - Show cached dashboard (no update)');
-            console.log('  npm run dashboard update   - Force update all players');
-            console.log('  npm run dashboard clear    - Clear entire watchlist\n');
+            console.log('  npm run dashboard                     - Update and show dashboard');
+            console.log('  npm run dashboard add "Name"          - Add player to watchlist');
+            console.log('  npm run dashboard remove "Name"       - Remove player from watchlist');
+            console.log('  npm run dashboard list                - List all players');
+            console.log('  npm run dashboard show                - Show cached dashboard (no update)');
+            console.log('  npm run dashboard update              - Force update all players');
+            console.log('  npm run dashboard clear               - Clear entire watchlist');
+            console.log('  npm run dashboard creative "Name" [#] - Log creative usage (optional interactions)');
+            console.log('  npm run dashboard analytics "Name"    - Update player analytics');
+            console.log('  npm run dashboard analytics-only      - Show only analytics data\n');
             break;
     }
 }

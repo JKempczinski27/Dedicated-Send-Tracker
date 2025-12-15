@@ -52,7 +52,12 @@ class WatchlistManager {
             position: position,
             addedAt: new Date().toISOString(),
             lastChecked: null,
-            cachedData: null
+            cachedData: null,
+            analytics: {
+                creativeUsageCount: 0,
+                lastCreativeDate: null,
+                postInteractions: 0
+            }
         };
 
         this.watchlist.players.push(player);
@@ -127,6 +132,94 @@ class WatchlistManager {
             healthy: healthy,
             lastUpdated: this.watchlist.lastUpdated
         };
+    }
+
+    // Update player analytics
+    updatePlayerAnalytics(playerName, analyticsData) {
+        const player = this.watchlist.players.find(
+            p => p.name.toLowerCase() === playerName.toLowerCase()
+        );
+
+        if (!player) {
+            return { success: false, message: 'Player not found on watchlist' };
+        }
+
+        // Initialize analytics if it doesn't exist (for backwards compatibility)
+        if (!player.analytics) {
+            player.analytics = {
+                creativeUsageCount: 0,
+                lastCreativeDate: null,
+                postInteractions: 0
+            };
+        }
+
+        // Update analytics fields
+        if (analyticsData.creativeUsageCount !== undefined) {
+            player.analytics.creativeUsageCount = analyticsData.creativeUsageCount;
+        }
+        if (analyticsData.lastCreativeDate !== undefined) {
+            player.analytics.lastCreativeDate = analyticsData.lastCreativeDate;
+        }
+        if (analyticsData.postInteractions !== undefined) {
+            player.analytics.postInteractions = analyticsData.postInteractions;
+        }
+
+        this.saveWatchlist();
+        return { success: true, message: `Updated analytics for ${playerName}` };
+    }
+
+    // Increment creative usage count
+    incrementCreativeUsage(playerName, interactions = 0) {
+        const player = this.watchlist.players.find(
+            p => p.name.toLowerCase() === playerName.toLowerCase()
+        );
+
+        if (!player) {
+            return { success: false, message: 'Player not found on watchlist' };
+        }
+
+        // Initialize analytics if it doesn't exist
+        if (!player.analytics) {
+            player.analytics = {
+                creativeUsageCount: 0,
+                lastCreativeDate: null,
+                postInteractions: 0
+            };
+        }
+
+        player.analytics.creativeUsageCount++;
+        player.analytics.lastCreativeDate = new Date().toISOString();
+        if (interactions > 0) {
+            player.analytics.postInteractions = interactions;
+        }
+
+        this.saveWatchlist();
+        return {
+            success: true,
+            message: `Recorded creative usage for ${playerName} (Total: ${player.analytics.creativeUsageCount})`
+        };
+    }
+
+    // Get player analytics
+    getPlayerAnalytics(playerName) {
+        const player = this.watchlist.players.find(
+            p => p.name.toLowerCase() === playerName.toLowerCase()
+        );
+
+        if (!player) {
+            return null;
+        }
+
+        // Initialize analytics if it doesn't exist
+        if (!player.analytics) {
+            player.analytics = {
+                creativeUsageCount: 0,
+                lastCreativeDate: null,
+                postInteractions: 0
+            };
+        }
+
+        return player.analytics;
     }
 }
 
