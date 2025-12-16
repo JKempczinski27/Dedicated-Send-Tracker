@@ -6,10 +6,10 @@ const NewsTracker = require('./news-tracker');
 const RedditTracker = require('./reddit-tracker');
 
 // API Keys
-const NFL_API_KEY = process.env.NFL_API_KEY || 'XgHqalcBNSjLzQBUkRVL1PJ0iJIFgcfNWFeHEvHk';
+const CLIENT_KEY = process.env.NFL_CLIENT_KEY || 'VhcsgwovwvCiN3xrl5UPippxjaMBOwqk';
+const CLIENT_SECRET = process.env.NFL_CLIENT_SECRET || '9giQIDN3gmlaKjbL';
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
-const ACCESS_LEVEL = process.env.SPORTRADAR_ACCESS_LEVEL || 'trial';
 
 class EnhancedTracker {
     constructor() {
@@ -17,59 +17,71 @@ class EnhancedTracker {
         this.podcastTracker = new PodcastTracker();
         this.newsTracker = NEWS_API_KEY ? new NewsTracker(NEWS_API_KEY) : null;
         this.redditTracker = new RedditTracker();
-        this.teamsCache = null;
+        this.cachedToken = null;
+        this.tokenExpiry = null;
     }
 
-    // Fetch all NFL teams (cached)
-    async fetchTeams() {
-        if (this.teamsCache) return this.teamsCache;
-        
+    // Get OAuth token from NFL Identity API
+    async getToken() {
+        // Return cached token if still valid
+        if (this.cachedToken && this.tokenExpiry && Date.now() < this.tokenExpiry) {
+            return this.cachedToken;
+        }
+
+        const postData = JSON.stringify({
+            clientKey: CLIENT_KEY,
+            clientSecret: CLIENT_SECRET
+        });
+
         const options = {
-            hostname: 'api.sportradar.com',
-            path: `/nfl/official/${ACCESS_LEVEL}/v7/en/league/hierarchy.json`,
+            hostname: 'api.nfl.com',
+            path: '/identity/v3/token',
+            method: 'POST',
             headers: {
                 'Accept': 'application/json',
-                'x-api-key': NFL_API_KEY
+                'Authorization': CLIENT_KEY,
+                'Content-Type': 'application/json',
+                'Content-Length': postData.length
             }
         };
 
         return new Promise((resolve, reject) => {
-            https.get(options, (res) => {
+            const req = https.request(options, (res) => {
                 let data = '';
                 res.on('data', (chunk) => { data += chunk; });
                 res.on('end', () => {
                     if (res.statusCode === 200) {
                         try {
                             const parsed = JSON.parse(data);
-                            const teams = [];
-                            parsed.conferences?.forEach(conf => {
-                                conf.divisions?.forEach(div => {
-                                    div.teams?.forEach(team => {
-                                        teams.push({ id: team.id, name: team.name, alias: team.alias });
-                                    });
-                                });
-                            });
-                            this.teamsCache = teams;
-                            resolve(teams);
+                            this.cachedToken = parsed.accessToken;
+                            this.tokenExpiry = parsed.expiresIn * 1000;
+                            resolve(this.cachedToken);
                         } catch (error) {
-                            reject(new Error('Failed to parse teams'));
+                            reject(new Error('Failed to parse token response'));
                         }
                     } else {
-                        reject(new Error(`API request failed with status ${res.statusCode}`));
+                        reject(new Error(`Token request failed with status ${res.statusCode}: ${data}`));
                     }
                 });
-            }).on('error', reject);
+            });
+
+            req.on('error', reject);
+            req.write(postData);
+            req.end();
         });
     }
 
-    // Fetch team roster with injury info
-    async fetchTeamRoster(teamId) {
+    // Fetch injuries from NFL API
+    async fetchInjuries(season = 2024, seasonType = 'REG') {
+        const token = await this.getToken();
+        
         const options = {
-            hostname: 'api.sportradar.com',
-            path: `/nfl/official/${ACCESS_LEVEL}/v7/en/teams/${teamId}/full_roster.json`,
+            hostname: 'api.nfl.com',
+            path: `/football/v2/injuries?season=${season}&seasonType=${seasonType}`,
+            method: 'GET',
             headers: {
                 'Accept': 'application/json',
-                'x-api-key': NFL_API_KEY
+                'Authorization': `Bearer ${token}`
             }
         };
 
@@ -82,10 +94,10 @@ class EnhancedTracker {
                         try {
                             resolve(JSON.parse(data));
                         } catch (error) {
-                            reject(new Error('Failed to parse roster'));
+                            reject(new Error('Failed to parse injuries'));
                         }
                     } else {
-                        reject(new Error(`API request failed with status ${res.statusCode}`));
+                        reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
                     }
                 });
             }).on('error', reject);
@@ -94,34 +106,29 @@ class EnhancedTracker {
 
     // Fetch injuries for a specific player
     async fetchPlayerInjury(playerName) {
-        const teams = await this.fetchTeams();
-        
-        for (const team of teams) {
-            try {
-                const roster = await this.fetchTeamRoster(team.id);
-                if (roster.players) {
-                    const player = roster.players.find(p => {
-                        const fullName = p.name || `${p.first_name} ${p.last_name}`;
-                        return fullName.toLowerCase().includes(playerName.toLowerCase());
-                    });
-                    
-                    if (player) {
-                        return {
-                            name: player.name || `${player.first_name} ${player.last_name}`,
-                            team: team.name,
-                            teamAlias: team.alias,
-                            position: player.position,
-                            status: player.status,
-                            jersey: player.jersey,
-                            found: true
-                        };
-                    }
+        try {
+            const data = await this.fetchInjuries();
+            
+            if (data.injuries && Array.isArray(data.injuries)) {
+                const playerInjury = data.injuries.find(injury => {
+                    const displayName = injury.person?.displayName || '';
+                    return displayName.toLowerCase().includes(playerName.toLowerCase());
+                });
+                
+                if (playerInjury) {
+                    return {
+                        name: playerInjury.person?.displayName || 'Unknown',
+                        team: playerInjury.team?.fullName || 'Unknown',
+                        position: playerInjury.position,
+                        status: playerInjury.injuryStatus || 'N/A',
+                        injuries: playerInjury.injuries?.join(', ') || 'N/A',
+                        practiceStatus: playerInjury.practiceStatus,
+                        found: true
+                    };
                 }
-                // Rate limiting - 1 second for trial account
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            } catch (error) {
-                console.error(`Error checking ${team.name}:`, error.message);
             }
+        } catch (error) {
+            console.error(`Error fetching player injury: ${error.message}`);
         }
         
         return { found: false, name: playerName };
@@ -142,7 +149,7 @@ class EnhancedTracker {
         };
 
         // 1. Check injury status
-        console.log('⚕️  Fetching injury data from Sportradar...');
+        console.log('⚕️  Fetching injury data from NFL.com API...');
         try {
             const playerInjury = await this.fetchPlayerInjury(playerName);
             results.injury = playerInjury;
@@ -205,29 +212,27 @@ class EnhancedTracker {
 
     displayInjuryStatus(injury, playerName) {
         if (!injury || !injury.found) {
-            console.log(`   ⚠️  Player not found: ${playerName}\n`);
+            console.log(`   ⚠️  Player not found in injury report: ${playerName}\n`);
+            console.log(`   (This may mean the player is healthy or not currently injured)\n`);
             return;
         }
 
         console.log(`   Player: ${injury.name}`);
-        console.log(`   Team: ${injury.team} (${injury.teamAlias})`);
+        console.log(`   Team: ${injury.team}`);
         console.log(`   Position: ${injury.position}`);
-        console.log(`   Jersey: #${injury.jersey || 'N/A'}`);
+        console.log(`   Injury: ${injury.injuries}`);
+        console.log(`   Status: ${injury.status}`);
         
-        // Status interpretation
-        const statusMap = {
-            'ACT': '✅ Active (Healthy)',
-            'IR': '🚑 Injured Reserve',
-            'PRA': '📋 Practice Squad',
-            'PUP': '⚕️  Physically Unable to Perform',
-            'IRD': '🔄 IR - Designated for Return',
-            'SUS': '⛔ Suspended',
-            'PRA_IR': '📋 Practice Squad - Injured',
-            'NON': '❌ Non-Football Injury List'
-        };
-        
-        const statusDisplay = statusMap[injury.status] || injury.status || 'Unknown';
-        console.log(`   Status: ${statusDisplay}`);
+        if (injury.practiceStatus) {
+            const practiceMap = {
+                'FULL': '✅ Full Practice',
+                'LIMITED': '⚠️  Limited Practice',
+                'DIDNOT': '❌ Did Not Practice',
+                'N/A': 'No Practice Data'
+            };
+            const practiceDisplay = practiceMap[injury.practiceStatus] || injury.practiceStatus;
+            console.log(`   Practice: ${practiceDisplay}`);
+        }
         console.log('');
     }
 
@@ -319,7 +324,8 @@ async function main() {
         console.log('Usage: node enhanced-tracker.js <player name>');
         console.log('Example: node enhanced-tracker.js Patrick Mahomes');
         console.log('\nRequired API Keys:');
-        console.log('  NFL_API_KEY: ✅ Configured');
+        console.log('  NFL_CLIENT_KEY: ✅ Configured');
+        console.log('  NFL_CLIENT_SECRET: ✅ Configured');
         console.log(`  YOUTUBE_API_KEY: ${YOUTUBE_API_KEY ? '✅' : '❌'} ${!YOUTUBE_API_KEY ? '(Optional)' : ''}`);
         console.log(`  NEWS_API_KEY: ${NEWS_API_KEY ? '✅' : '❌'} ${!NEWS_API_KEY ? '(Optional)' : ''}`);
         process.exit(1);

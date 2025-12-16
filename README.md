@@ -74,7 +74,8 @@ cp .env.example .env
 Edit `.env` and add your API keys:
 ```env
 # Required
-NFL_API_KEY=your_sportsdata_api_key
+NFL_CLIENT_KEY=your_nfl_client_key
+NFL_CLIENT_SECRET=your_nfl_client_secret
 
 # Optional (for enhanced features)
 YOUTUBE_API_KEY=your_youtube_api_key
@@ -82,7 +83,7 @@ NEWS_API_KEY=your_news_api_key
 ```
 
 **Getting API Keys:**
-- **NFL API** (Required): [SportsData.io](https://sportsdata.io/)
+- **NFL API** (Required): [NFL Developer Portal](https://api.nfl.com/)
 - **News API** (Optional): [NewsAPI.org](https://newsapi.org/) - Free tier available
 - **YouTube API** (Optional): [Google Developers Console](https://console.developers.google.com/)
 - **Reddit**: No API key required!
@@ -101,7 +102,8 @@ npm install -g vercel
 vercel
 
 # Set environment variables
-vercel env add NFL_API_KEY
+vercel env add NFL_CLIENT_KEY
+vercel env add NFL_CLIENT_SECRET
 vercel env add YOUTUBE_API_KEY  # Optional
 vercel env add NEWS_API_KEY     # Optional
 
@@ -280,7 +282,7 @@ Simply open the generated `dashboard.html` file in your web browser!
 ## API Information
 
 ### Required APIs
-- **SportsData.io NFL API**: Provides injury data, player info, and team stats
+- **NFL.com API**: Provides official NFL injury data
 
 ### Optional APIs
 - **News API**: Searches news articles from thousands of sources
@@ -317,13 +319,13 @@ Simply open the generated `dashboard.html` file in your web browser!
 ### Breaking Injury Alerts & API Lag
 This tracker includes a **hybrid approach** to injury detection:
 
-1. **Official Roster API (Sportradar)**: Provides authoritative injury status, but updates lag 24-48 hours behind breaking news
+1. **Official Roster API (NFL.com)**: Provides authoritative injury status, but updates lag 24-48 hours behind breaking news
 2. **Breaking News Detection**: Automatically scans news articles for injury keywords (torn, ACL, Achilles, surgery, IR, etc.)
 3. **Early Warning System**: When injury keywords appear in recent articles (last 48 hours), a prominent alert is displayed even if the official roster shows "Active"
 
-**Why this matters**: When a player gets injured, news media reports it immediately, but it takes 24-48 hours for teams to officially update roster status in the Sportradar API. The breaking news alert feature ensures you know about injuries as soon as they're reported, not when they're officially processed.
+**Why this matters**: When a player gets injured, news media reports it immediately, but it takes 24-48 hours for teams to officially update roster status in the NFL.com API. The breaking news alert feature ensures you know about injuries as soon as they're reported, not when they're officially processed.
 
-**Example**: Daniel Jones tore his Achilles on December 8, 2025. News articles reported it immediately with headlines like "Daniel Jones injury makes Seahawks huge favorites vs. Colts", but the Sportradar API continued showing him as "ACT" (Active/Healthy) for the next day. The breaking news alert would flag this discrepancy.
+**Example**: Daniel Jones tore his Achilles on December 8, 2025. News articles reported it immediately with headlines like "Daniel Jones injury makes Seahawks huge favorites vs. Colts", but the NFL.com API continued showing him as "OUT" (Active/Healthy) for the next day. The breaking news alert would flag this discrepancy.
 
 ## Limitations
 
@@ -331,7 +333,7 @@ This tracker includes a **hybrid approach** to injury detection:
 - **Reddit location data**: Not available through API
 - **News API**: Free tier has rate limits (100 requests/day)
 - **Podcast transcripts**: Only searches titles/descriptions, not full audio
-- **Official Roster Data**: Sportradar API lags 24-48 hours behind breaking injury news (addressed by breaking news alerts)
+- **Official Roster Data**: NFL.com API lags 24-48 hours behind breaking injury news (addressed by breaking news alerts)
 
 ## Future Enhancements
 

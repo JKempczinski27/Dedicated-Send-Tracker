@@ -1,65 +1,75 @@
-`
 require('dotenv').config();
 const https = require('https');
 
-const API_KEY = process.env.NFL_API_KEY || 'XgHqalcBNSjLzQBUkRVL1PJ0iJIFgcfNWFeHEvHk';
-const BASE_URL = 'api.sportradar.com';
-const ACCESS_LEVEL = process.env.SPORTRADAR_ACCESS_LEVEL || 'trial';
+const CLIENT_KEY = process.env.NFL_CLIENT_KEY || 'VhcsgwovwvCiN3xrl5UPippxjaMBOwqk';
+const CLIENT_SECRET = process.env.NFL_CLIENT_SECRET || '9giQIDN3gmlaKjbL';
+const TOKEN_URL = 'api.nfl.com';
+const API_URL = 'api.nfl.com';
 
-// List of all NFL team IDs (you can get this from the hierarchy endpoint)
-const NFL_TEAMS = [
-    { id: 'c5a59daa-53a7-4de0-851f-fb12be893e9e', name: 'Detroit Lions', alias: 'DET' },
-    { id: 'a20471b4-a8d9-40c7-95ad-90eb1e', name: 'Green Bay Packers', alias: 'GB' },
-    // Add more teams as needed - for now we'll use the hierarchy endpoint
-];
+let cachedToken = null;
+let tokenExpiry = null;
 
-// Fetch all NFL teams
-function fetchTeams() {
+// Get OAuth token from NFL Identity API
+function getToken() {
+    // Return cached token if still valid
+    if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
+        return Promise.resolve(cachedToken);
+    }
+
+    const postData = JSON.stringify({
+        clientKey: CLIENT_KEY,
+        clientSecret: CLIENT_SECRET
+    });
+
     const options = {
-        hostname: BASE_URL,
-        path: `/nfl/official/${ACCESS_LEVEL}/v7/en/league/hierarchy.json`,
+        hostname: TOKEN_URL,
+        path: '/identity/v3/token',
+        method: 'POST',
         headers: {
             'Accept': 'application/json',
-            'x-api-key': API_KEY
+            'Authorization': CLIENT_KEY,
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length
         }
     };
 
     return new Promise((resolve, reject) => {
-        https.get(options, (res) => {
+        const req = https.request(options, (res) => {
             let data = '';
             res.on('data', (chunk) => { data += chunk; });
             res.on('end', () => {
                 if (res.statusCode === 200) {
                     try {
                         const parsed = JSON.parse(data);
-                        const teams = [];
-                        parsed.conferences?.forEach(conf => {
-                            conf.divisions?.forEach(div => {
-                                div.teams?.forEach(team => {
-                                    teams.push({ id: team.id, name: team.name, alias: team.alias });
-                                });
-                            });
-                        });
-                        resolve(teams);
+                        cachedToken = parsed.accessToken;
+                        tokenExpiry = parsed.expiresIn * 1000; // Convert to milliseconds
+                        resolve(cachedToken);
                     } catch (error) {
-                        reject(new Error('Failed to parse teams'));
+                        reject(new Error('Failed to parse token response'));
                     }
                 } else {
-                    reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
+                    reject(new Error(`Token request failed with status ${res.statusCode}: ${data}`));
                 }
             });
-        }).on('error', reject);
+        });
+
+        req.on('error', reject);
+        req.write(postData);
+        req.end();
     });
 }
 
-// Fetch team roster with injury info
-function fetchTeamRoster(teamId) {
+// Fetch injuries from NFL API
+async function fetchInjuries(season = 2024, seasonType = 'REG') {
+    const token = await getToken();
+    
     const options = {
-        hostname: BASE_URL,
-        path: `/nfl/official/${ACCESS_LEVEL}/v7/en/teams/${teamId}/full_roster.json`,
+        hostname: API_URL,
+        path: `/football/v2/injuries?season=${season}&seasonType=${seasonType}`,
+        method: 'GET',
         headers: {
             'Accept': 'application/json',
-            'x-api-key': API_KEY
+            'Authorization': `Bearer ${token}`
         }
     };
 
@@ -72,10 +82,10 @@ function fetchTeamRoster(teamId) {
                     try {
                         resolve(JSON.parse(data));
                     } catch (error) {
-                        reject(new Error('Failed to parse roster'));
+                        reject(new Error('Failed to parse injuries'));
                     }
                 } else {
-                    reject(new Error(`API request failed with status ${res.statusCode}`));
+                    reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
                 }
             });
         }).on('error', reject);
@@ -84,35 +94,26 @@ function fetchTeamRoster(teamId) {
 
 // Fetch all injuries across the league
 async function fetchAllInjuries() {
-    console.log('Fetching NFL teams...');
-    const teams = await fetchTeams();
-    console.log(`Found ${teams.length} teams. Fetching rosters...\n`);
+    console.log('Fetching NFL injury data...');
+    const data = await fetchInjuries();
     
     const injuries = [];
     
-    for (const team of teams) {
-        try {
-            const roster = await fetchTeamRoster(team.id);
-            if (roster.players) {
-                roster.players.forEach(player => {
-                    // Check if player has injury status that's not active
-                    if (player.status && player.status !== 'ACT' && player.status !== 'Active') {
-                        injuries.push({
-                            team: team.name,
-                            teamAlias: team.alias,
-                            player: player.name || `${player.first_name} ${player.last_name}`,
-                            position: player.position,
-                            status: player.status,
-                            jersey: player.jersey
-                        });
-                    }
+    if (data.injuries && Array.isArray(data.injuries)) {
+        data.injuries.forEach(injury => {
+            // Only include if there's an actual injury status
+            if (injury.injuryStatus || (injury.injuries && injury.injuries.length > 0)) {
+                injuries.push({
+                    team: injury.team?.fullName || 'Unknown',
+                    teamAlias: injury.team?.fullName?.split(' ').pop() || 'UNK',
+                    player: injury.person?.displayName || 'Unknown',
+                    position: injury.position,
+                    status: injury.injuryStatus || 'N/A',
+                    injuries: injury.injuries?.join(', ') || 'N/A',
+                    practiceStatus: injury.practiceStatus
                 });
             }
-            // Rate limiting - wait 1 second between requests for trial account
-            await new Promise(resolve => setTimeout(resolve, 1000));
-        } catch (error) {
-            console.error(`Error fetching ${team.name}: ${error.message}`);
-        }
+        });
     }
     
     return injuries;
@@ -138,8 +139,12 @@ function displayInjuries(injuries) {
     Object.keys(byTeam).sort().forEach(team => {
         console.log(`\n--- ${team} ---`);
         byTeam[team].forEach(inj => {
-            console.log(`  • ${inj.player} (#${inj.jersey || 'N/A'}) - ${inj.position}`);
+            console.log(`  • ${inj.player} - ${inj.position}`);
+            console.log(`    Injury: ${inj.injuries}`);
             console.log(`    Status: ${inj.status}`);
+            if (inj.practiceStatus) {
+                console.log(`    Practice: ${inj.practiceStatus}`);
+            }
             console.log('');
         });
     });
@@ -160,10 +165,13 @@ function searchPlayer(injuries, playerName) {
     console.log(`\n=== Injury Status for "${playerName}" ===\n`);
     results.forEach(inj => {
         console.log(`Player: ${inj.player}`);
-        console.log(`Team: ${inj.team} (${inj.teamAlias})`);
+        console.log(`Team: ${inj.team}`);
         console.log(`Position: ${inj.position}`);
-        console.log(`Jersey: #${inj.jersey || 'N/A'}`);
+        console.log(`Injury: ${inj.injuries}`);
         console.log(`Status: ${inj.status}`);
+        if (inj.practiceStatus) {
+            console.log(`Practice: ${inj.practiceStatus}`);
+        }
         console.log('');
     });
 }
@@ -174,7 +182,7 @@ async function main() {
     const playerSearch = args.join(' ');
 
     try {
-        console.log('Fetching NFL injury data from Sportradar...\n');
+        console.log('Fetching NFL injury data from NFL.com API...\n');
         const injuries = await fetchAllInjuries();
 
         if (playerSearch) {
@@ -184,8 +192,8 @@ async function main() {
         }
     } catch (error) {
         console.error('Error:', error.message);
-        console.error('\nTip: Make sure your Sportradar API key is set correctly');
-        console.error('Set NFL_API_KEY in your .env file');
+        console.error('\nTip: Make sure your NFL API credentials are set correctly');
+        console.error('Set NFL_CLIENT_KEY and NFL_CLIENT_SECRET in your .env file');
         process.exit(1);
     }
 }

@@ -6,7 +6,7 @@ This tracker includes an intelligent **Breaking Injury News Alert** system that 
 
 ## The Problem
 
-Official NFL roster APIs (like Sportradar) have a **24-48 hour lag** between when injuries occur and when they're officially updated:
+Official NFL roster APIs (like NFL.com) have a **24-48 hour lag** between when injuries occur and when they're officially updated:
 
 - **Day 0**: Player gets injured during game
 - **Day 0 (minutes later)**: Sports media reports the injury
@@ -18,7 +18,7 @@ This means relying solely on official APIs can leave you 1-2 days behind on crit
 
 Our **hybrid approach** combines two data sources:
 
-1. **Official Roster API (Sportradar)**: Authoritative status once updated
+1. **Official Roster API (NFL.com)**: Authoritative status once updated
 2. **Breaking News Detection**: Real-time monitoring of news articles with AI keyword detection
 
 ### How It Works
@@ -60,7 +60,7 @@ These need additional context to avoid false positives:
 | Source | Timestamp | Status Shown |
 |--------|-----------|--------------|
 | News Articles | Dec 8, 02:30 AM | "Daniel Jones injury makes Seahawks huge favorites vs. Colts" |
-| Sportradar API | Dec 8, 10:00 AM | `Status: ACT (Active/Healthy)` ❌ |
+| NFL.com API | Dec 8, 10:00 AM | `Status: ACT (Active/Healthy)` ❌ |
 | Breaking News Alert | Dec 8, 10:00 AM | 🚨 16 injury articles detected ✅ |
 
 **The breaking news alert correctly identified the injury 24+ hours before the official API updated.**

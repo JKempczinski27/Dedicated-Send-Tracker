@@ -35,7 +35,8 @@ In the Vercel project settings, add your environment variables:
 2. Add the following variables:
 
 ```
-NFL_API_KEY=your_sportsdata_io_api_key
+NFL_CLIENT_KEY=your_nfl_client_key
+NFL_CLIENT_SECRET=your_nfl_client_secret
 YOUTUBE_API_KEY=your_youtube_api_key (optional)
 NEWS_API_KEY=your_news_api_key (optional)
 DATABASE_URL=your_postgresql_connection_string (required)
@@ -108,7 +109,8 @@ Follow the prompts:
 ### Step 4: Add Environment Variables
 
 ```bash
-vercel env add NFL_API_KEY
+vercel env add NFL_CLIENT_KEY
+vercel env add NFL_CLIENT_SECRET
 ```
 
 Paste your API key when prompted. Repeat for other variables:
@@ -150,7 +152,8 @@ https://your-project-name.vercel.app
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `NFL_API_KEY` | ✅ Yes | Your SportsData.io API key for injury data |
+| `NFL_CLIENT_KEY` | ✅ Yes | Your NFL.com API client key for injury data |
+| `NFL_CLIENT_SECRET` | ✅ Yes | Your NFL.com API client secret |
 | `YOUTUBE_API_KEY` | ⚠️ Optional | YouTube Data API for video mentions |
 | `NEWS_API_KEY` | ⚠️ Optional | News API for sentiment analysis |
 | `DATABASE_URL` | ✅ Yes | PostgreSQL connection string for data storage |

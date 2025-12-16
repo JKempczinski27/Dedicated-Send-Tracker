@@ -1,28 +1,72 @@
 require('dotenv').config();
 const https = require('https');
 
-const API_KEY = process.env.NFL_API_KEY || 'XgHqalcBNSjLzQBUkRVL1PJ0iJIFgcfNWFeHEvHk';
-const BASE_URL = 'api.sportradar.com';
-const ACCESS_LEVEL = process.env.SPORTRADAR_ACCESS_LEVEL || 'trial';
+const CLIENT_KEY = process.env.NFL_CLIENT_KEY || 'VhcsgwovwvCiN3xrl5UPippxjaMBOwqk';
+const CLIENT_SECRET = process.env.NFL_CLIENT_SECRET || '9giQIDN3gmlaKjbL';
 
-// Map of team abbreviations to team IDs
-const TEAM_MAP = {
-    'IND': '82cf9565-6eb9-4f01-bdbd-5aa0d472fcd9', // Indianapolis Colts
-    'NYG': 'e5174c3e-1dca-4d61-8b66-7bb183d6c2c3', // New York Giants
-    'KC': 'a20471b4-a8d9-40c7-95ad-90eb1e639c6f', // Kansas City Chiefs
-    'BUF': 'dc7f5c0e-b15e-4df0-a1af-9c75a1e5a11d', // Buffalo Bills
-    'DET': 'c5a59daa-53a7-4de0-851f-fb12be893e9e', // Detroit Lions
-    // Add more as needed
-};
+let cachedToken = null;
+let tokenExpiry = null;
 
-// Fetch team roster
-function fetchTeamRoster(teamId) {
+// Get OAuth token from NFL Identity API
+function getToken() {
+    if (cachedToken && tokenExpiry && Date.now() < tokenExpiry) {
+        return Promise.resolve(cachedToken);
+    }
+
+    const postData = JSON.stringify({
+        clientKey: CLIENT_KEY,
+        clientSecret: CLIENT_SECRET
+    });
+
     const options = {
-        hostname: BASE_URL,
-        path: `/nfl/official/${ACCESS_LEVEL}/v7/en/teams/${teamId}/full_roster.json`,
+        hostname: 'api.nfl.com',
+        path: '/identity/v3/token',
+        method: 'POST',
         headers: {
             'Accept': 'application/json',
-            'x-api-key': API_KEY
+            'Authorization': CLIENT_KEY,
+            'Content-Type': 'application/json',
+            'Content-Length': postData.length
+        }
+    };
+
+    return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+            let data = '';
+            res.on('data', (chunk) => { data += chunk; });
+            res.on('end', () => {
+                if (res.statusCode === 200) {
+                    try {
+                        const parsed = JSON.parse(data);
+                        cachedToken = parsed.accessToken;
+                        tokenExpiry = parsed.expiresIn * 1000;
+                        resolve(cachedToken);
+                    } catch (error) {
+                        reject(new Error('Failed to parse token response'));
+                    }
+                } else {
+                    reject(new Error(`Token request failed with status ${res.statusCode}: ${data}`));
+                }
+            });
+        });
+
+        req.on('error', reject);
+        req.write(postData);
+        req.end();
+    });
+}
+
+// Fetch injuries from NFL API
+async function fetchInjuries(season = 2024, seasonType = 'REG') {
+    const token = await getToken();
+    
+    const options = {
+        hostname: 'api.nfl.com',
+        path: `/football/v2/injuries?season=${season}&seasonType=${seasonType}`,
+        method: 'GET',
+        headers: {
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${token}`
         }
     };
 
@@ -35,80 +79,67 @@ function fetchTeamRoster(teamId) {
                     try {
                         resolve(JSON.parse(data));
                     } catch (error) {
-                        reject(new Error('Failed to parse roster'));
+                        reject(new Error('Failed to parse injuries'));
                     }
                 } else {
-                    reject(new Error(`API request failed with status ${res.statusCode}`));
+                    reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
                 }
             });
         }).on('error', reject);
     });
 }
 
-// Search for player in specific team
-async function searchPlayerInTeam(playerName, teamAbbr) {
-    const teamId = TEAM_MAP[teamAbbr.toUpperCase()];
-    if (!teamId) {
-        console.log(`Unknown team abbreviation: ${teamAbbr}`);
-        console.log(`Available teams: ${Object.keys(TEAM_MAP).join(', ')}`);
-        return;
-    }
-
-    console.log(`Searching for ${playerName} in ${teamAbbr}...\n`);
+// Search for player in injury report
+async function searchPlayer(playerName) {
+    console.log(`Searching for ${playerName} in NFL injury report...\n`);
 
     try {
-        const roster = await fetchTeamRoster(teamId);
+        const data = await fetchInjuries();
         
-        if (!roster.players) {
-            console.log('No roster data available');
+        if (!data.injuries || !Array.isArray(data.injuries)) {
+            console.log('No injury data available');
             return;
         }
 
-        const player = roster.players.find(p => {
-            const fullName = p.name || `${p.first_name} ${p.last_name}`;
-            return fullName.toLowerCase().includes(playerName.toLowerCase());
+        const matches = data.injuries.filter(injury => {
+            const displayName = injury.person?.displayName || '';
+            return displayName.toLowerCase().includes(playerName.toLowerCase());
         });
 
-        if (!player) {
-            console.log(`Player not found: ${playerName}`);
+        if (matches.length === 0) {
+            console.log(`Player not found in injury report: ${playerName}`);
+            console.log('(This may mean the player is healthy)');
             return;
         }
 
-        // Display player info
-        console.log(`=== ${player.name || `${player.first_name} ${player.last_name}`} ===\n`);
-        console.log(`Team: ${roster.market} ${roster.name}`);
-        console.log(`Position: ${player.position}`);
-        console.log(`Jersey: #${player.jersey || 'N/A'}`);
-        
-        // Status display
-        const statusMap = {
-            'ACT': '✅ Active (Healthy)',
-            'IR': '🚑 Injured Reserve',
-            'PRA': '📋 Practice Squad',
-            'PUP': '⚕️ Physically Unable to Perform',
-            'IRD': '🔄 IR - Designated for Return',
-            'SUS': '⛔ Suspended',
-            'PRA_IR': '📋 Practice Squad - Injured',
-            'NON': '❌ Non-Football Injury List'
-        };
-        
-        const statusDisplay = statusMap[player.status] || player.status || 'Unknown';
-        console.log(`Status: ${statusDisplay}`);
-        
-        if (player.birth_date) {
-            console.log(`Birth Date: ${player.birth_date}`);
-        }
-        if (player.height) {
-            console.log(`Height: ${Math.floor(player.height / 12)}' ${player.height % 12}"`);
-        }
-        if (player.weight) {
-            console.log(`Weight: ${player.weight} lbs`);
-        }
-        if (player.college) {
-            console.log(`College: ${player.college}`);
-        }
-        console.log('');
-        
+        // Display player info for each match
+        matches.forEach((injury, index) => {
+            if (index > 0) console.log('\n' + '-'.repeat(50) + '\n');
+            
+            console.log(`=== ${injury.person?.displayName} ===\n`);
+            console.log(`Team: ${injury.team?.fullName}`);
+            console.log(`Position: ${injury.position}`);
+            console.log(`Injury: ${injury.injuries?.join(', ') || 'N/A'}`);
+            console.log(`Status: ${injury.injuryStatus || 'N/A'}`);
+            
+            if (injury.practiceStatus) {
+                const practiceMap = {
+                    'FULL': '✅ Full Practice',
+                    'LIMITED': '⚠️  Limited Practice',
+                    'DIDNOT': '❌ Did Not Practice'
+                };
+                const practiceDisplay = practiceMap[injury.practiceStatus] || injury.practiceStatus;
+                console.log(`Practice: ${practiceDisplay}`);
+            }
+            
+            if (injury.practiceDays && injury.practiceDays.length > 0) {
+                console.log(`\nPractice Report:`);
+                injury.practiceDays.forEach(day => {
+                    console.log(`  ${day.date}: ${day.status}`);
+                });
+            }
+        });
+
     } catch (error) {
         console.error('Error:', error.message);
     }
@@ -116,14 +147,12 @@ async function searchPlayerInTeam(playerName, teamAbbr) {
 
 // Main
 const args = process.argv.slice(2);
-if (args.length < 2) {
-    console.log('Usage: node quick-player-lookup.js <player-name> <team-abbr>');
-    console.log('Example: node quick-player-lookup.js "Daniel Jones" IND');
-    console.log(`\nAvailable teams: ${Object.keys(TEAM_MAP).join(', ')}`);
+if (args.length < 1) {
+    console.log('Usage: node quick-player-lookup.js <player-name>');
+    console.log('Example: node quick-player-lookup.js "Josh Allen"');
     process.exit(1);
 }
 
-const playerName = args[0];
-const teamAbbr = args[1];
+const playerName = args.join(' ');
 
-searchPlayerInTeam(playerName, teamAbbr);
+searchPlayer(playerName);
