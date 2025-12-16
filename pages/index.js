@@ -188,6 +188,7 @@ export default function Home() {
               <thead>
                 <tr>
                   <th>Player</th>
+                  <th>Roster</th>
                   <th>Status</th>
                   <th>Team / Position</th>
                   <th>Deployment</th>
@@ -463,8 +464,14 @@ function PlayerRow({ player, onRemove }) {
   const data = player.cachedData;
   const hasData = data && player.lastChecked;
   const injury = data?.injury;
+  const playerInfo = data?.playerInfo;
   const isInjured = injury && injury.found !== false &&
                     injury.status && injury.status !== 'ACT' && injury.status !== 'Active';
+  
+  // Check roster status from playerInfo
+  const rosterStatus = playerInfo?.status;
+  const isOnActiveRoster = rosterStatus === 'ACT';
+  const isOnReserve = rosterStatus === 'RES';
 
   const newsAnalysis = data?.news?.analysis;
   const injuryAlert = data?.news?.injuryAlert;
@@ -526,6 +533,20 @@ function PlayerRow({ player, onRemove }) {
             </button>
             <strong>{player.name}</strong>
           </div>
+        </td>
+        <td>
+          {playerInfo && playerInfo.found ? (
+            <div className="roster-status-cell">
+              {isOnActiveRoster && <span className="status-badge healthy">✅ Active</span>}
+              {isOnReserve && <span className="status-badge injured">🚑 Reserve/IR</span>}
+              {rosterStatus === 'PRA' && <span className="status-badge" style={{background: '#fbbf24', color: '#78350f'}}>📋 Practice Squad</span>}
+              {rosterStatus === 'PUP' && <span className="status-badge injured">⚕️ PUP</span>}
+              {rosterStatus === 'RET' && <span className="status-badge" style={{background: '#6b7280', color: '#fff'}}>👋 Retired</span>}
+              {!['ACT', 'RES', 'PRA', 'PUP', 'RET'].includes(rosterStatus) && <span style={{color: '#9ca3af'}}>{rosterStatus || '—'}</span>}
+            </div>
+          ) : (
+            <span style={{color: '#9ca3af'}}>—</span>
+          )}
         </td>
         <td>
           <span className={`status-badge ${isInjured ? 'injured' : 'healthy'}`}>

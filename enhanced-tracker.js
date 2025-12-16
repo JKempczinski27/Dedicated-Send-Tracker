@@ -104,6 +104,55 @@ class EnhancedTracker {
         });
     }
 
+    // Fetch player information from persons endpoint
+    async fetchPlayerInfo(playerName) {
+        const token = await this.getToken();
+        
+        const options = {
+            hostname: 'api.nfl.com',
+            path: `/football/v2/persons?displayName=${encodeURIComponent(playerName)}`,
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        };
+
+        return new Promise((resolve, reject) => {
+            https.get(options, (res) => {
+                let data = '';
+                res.on('data', (chunk) => { data += chunk; });
+                res.on('end', () => {
+                    if (res.statusCode === 200) {
+                        try {
+                            const parsed = JSON.parse(data);
+                            if (parsed.persons && parsed.persons.length > 0) {
+                                // Return the active player (not retired)
+                                const activePlayer = parsed.persons.find(p => p.status !== 'RET') || parsed.persons[0];
+                                resolve({
+                                    found: true,
+                                    id: activePlayer.id,
+                                    name: activePlayer.displayName,
+                                    status: activePlayer.status,
+                                    college: activePlayer.collegeNames?.[0],
+                                    birthDate: activePlayer.birthDate,
+                                    draftYear: activePlayer.draftYear,
+                                    headshot: activePlayer.headshot
+                                });
+                            } else {
+                                resolve({ found: false });
+                            }
+                        } catch (error) {
+                            reject(new Error('Failed to parse player info'));
+                        }
+                    } else {
+                        reject(new Error(`API request failed with status ${res.statusCode}: ${data}`));
+                    }
+                });
+            }).on('error', reject);
+        });
+    }
+
     // Fetch injuries for a specific player
     async fetchPlayerInjury(playerName) {
         try {
@@ -141,6 +190,7 @@ class EnhancedTracker {
         console.log(`${'='.repeat(60)}\n`);
 
         const results = {
+            playerInfo: null,
             injury: null,
             news: null,
             podcasts: null,
@@ -148,7 +198,17 @@ class EnhancedTracker {
             reddit: null
         };
 
-        // 1. Check injury status
+        // 1. Get player roster status
+        console.log('👤 Fetching player roster status...');
+        try {
+            const playerInfo = await this.fetchPlayerInfo(playerName);
+            results.playerInfo = playerInfo;
+            this.displayPlayerInfo(playerInfo);
+        } catch (error) {
+            console.log(`   Error: ${error.message}\n`);
+        }
+
+        // 2. Check injury status
         console.log('⚕️  Fetching injury data from NFL.com API...');
         try {
             const playerInjury = await this.fetchPlayerInjury(playerName);
@@ -208,6 +268,38 @@ class EnhancedTracker {
         console.log(`${'='.repeat(60)}\n`);
 
         return results;
+    }
+
+    displayPlayerInfo(playerInfo) {
+        if (!playerInfo || !playerInfo.found) {
+            console.log(`   ⚠️  Player not found\n`);
+            return;
+        }
+
+        console.log(`   Name: ${playerInfo.name}`);
+        
+        // Status interpretation
+        const statusMap = {
+            'ACT': '✅ Active Roster',
+            'RES': '🚑 Reserve/Injured Reserve',
+            'PRA': '📋 Practice Squad',
+            'PUP': '⚕️  Physically Unable to Perform',
+            'NON': '❌ Non-Football Injury List',
+            'SUS': '⛔ Suspended',
+            'RET': '👋 Retired',
+            'DEV': '🔄 Developmental'
+        };
+        
+        const statusDisplay = statusMap[playerInfo.status] || playerInfo.status || 'Unknown';
+        console.log(`   Roster Status: ${statusDisplay}`);
+        
+        if (playerInfo.college) {
+            console.log(`   College: ${playerInfo.college}`);
+        }
+        if (playerInfo.draftYear) {
+            console.log(`   Draft Year: ${playerInfo.draftYear}`);
+        }
+        console.log('');
     }
 
     displayInjuryStatus(injury, playerName) {
