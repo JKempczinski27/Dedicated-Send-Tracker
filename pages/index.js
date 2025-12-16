@@ -101,11 +101,15 @@ export default function Home() {
     total: watchlist.length,
     injured: watchlist.filter(p => {
       const injury = p.cachedData?.injury;
-      return injury && injury.found && injury.status && injury.status !== 'ACT';
+      const playerInfo = p.cachedData?.playerInfo;
+      const isOnReserve = playerInfo?.status === 'RES';
+      return (injury && injury.found && injury.status && injury.status !== 'ACT') || isOnReserve;
     }).length,
     healthy: watchlist.filter(p => {
       const injury = p.cachedData?.injury;
-      return !injury || !injury.found || !injury.status || injury.status === 'ACT';
+      const playerInfo = p.cachedData?.playerInfo;
+      const isOnReserve = playerInfo?.status === 'RES';
+      return (!injury || !injury.found || !injury.status || injury.status === 'ACT') && !isOnReserve;
     }).length
   };
 
@@ -465,13 +469,16 @@ function PlayerRow({ player, onRemove }) {
   const hasData = data && player.lastChecked;
   const injury = data?.injury;
   const playerInfo = data?.playerInfo;
-  const isInjured = injury && injury.found !== false &&
-                    injury.status && injury.status !== 'ACT' && injury.status !== 'Active';
   
   // Check roster status from playerInfo
   const rosterStatus = playerInfo?.status;
   const isOnActiveRoster = rosterStatus === 'ACT';
   const isOnReserve = rosterStatus === 'RES';
+  
+  // Consider player injured if they have an injury report entry OR are on injured reserve
+  const isInjured = (injury && injury.found !== false &&
+                    injury.status && injury.status !== 'ACT' && injury.status !== 'Active') ||
+                    isOnReserve;
 
   const newsAnalysis = data?.news?.analysis;
   const injuryAlert = data?.news?.injuryAlert;
