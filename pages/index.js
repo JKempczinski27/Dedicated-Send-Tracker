@@ -9,6 +9,7 @@ export default function Home() {
   const [newPlayerName, setNewPlayerName] = useState('');
   const [newPlayerDeploymentDate, setNewPlayerDeploymentDate] = useState('');
   const [addingPlayer, setAddingPlayer] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
   const router = useRouter();
 
   useEffect(() => {
@@ -178,8 +179,26 @@ export default function Home() {
           </form>
         </div>
 
-        {/* Player Table */}
-        {loading ? (
+        {/* Tab Navigation */}
+        <div className="tabs-container">
+          <div className="tabs">
+            <button
+              className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('dashboard')}
+            >
+              Dashboard
+            </button>
+            <button
+              className={`tab ${activeTab === 'input' ? 'active' : ''}`}
+              onClick={() => setActiveTab('input')}
+            >
+              Input
+            </button>
+          </div>
+        </div>
+
+        {/* Dashboard Tab Content */}
+        {activeTab === 'dashboard' && (loading ? (
           <div className="loading">Loading watchlist...</div>
         ) : watchlist.length === 0 ? (
           <div className="empty-state">
@@ -214,6 +233,11 @@ export default function Home() {
               </tbody>
             </table>
           </div>
+        ))}
+
+        {/* Input Tab Content */}
+        {activeTab === 'input' && (
+          <InputTabContent />
         )}
       </div>
 
@@ -423,6 +447,43 @@ export default function Home() {
           color: #6b7280;
         }
 
+        .tabs-container {
+          background: white;
+          border-radius: 15px 15px 0 0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          margin-top: 20px;
+          overflow: hidden;
+        }
+
+        .tabs {
+          display: flex;
+          border-bottom: 2px solid #e5e7eb;
+        }
+
+        .tab {
+          flex: 1;
+          padding: 15px 30px;
+          background: white;
+          border: none;
+          color: #6b7280;
+          font-weight: 600;
+          font-size: 1em;
+          cursor: pointer;
+          transition: all 0.2s;
+          border-bottom: 3px solid transparent;
+        }
+
+        .tab:hover {
+          background: #f9fafb;
+          color: #0a2463;
+        }
+
+        .tab.active {
+          color: #0a2463;
+          border-bottom: 3px solid #0a2463;
+          background: white;
+        }
+
         @media (max-width: 768px) {
           .header-top {
             flex-direction: column;
@@ -456,6 +517,235 @@ export default function Home() {
         }
       `}</style>
     </>
+  );
+}
+
+function InputTabContent() {
+  const [deploymentUsage, setDeploymentUsage] = useState('');
+  const [moduleViews, setModuleViews] = useState('');
+  const [playerName, setPlayerName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [message, setMessage] = useState({ text: '', type: '' });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    if (!playerName.trim()) {
+      setMessage({ text: 'Please enter a player name', type: 'error' });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      setMessage({ text: '', type: '' });
+
+      const res = await fetch('/api/analytics/input', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          playerName,
+          deploymentUsage: deploymentUsage ? parseInt(deploymentUsage) : null,
+          moduleViews: moduleViews ? parseInt(moduleViews) : null
+        })
+      });
+
+      if (res.ok) {
+        setMessage({ text: 'Data saved successfully!', type: 'success' });
+        setPlayerName('');
+        setDeploymentUsage('');
+        setModuleViews('');
+      } else {
+        const error = await res.json();
+        setMessage({ text: error.message || 'Error saving data', type: 'error' });
+      }
+    } catch (error) {
+      console.error('Error saving input data:', error);
+      setMessage({ text: 'Error saving data', type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  return (
+    <div className="input-tab-container">
+      <div className="input-form-card">
+        <h2>Analytics Input</h2>
+        <p className="input-subtitle">Enter deployment usage and module view statistics</p>
+
+        {message.text && (
+          <div className={`message ${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="input-form">
+          <div className="form-group">
+            <label htmlFor="playerName">Player Name</label>
+            <input
+              id="playerName"
+              type="text"
+              placeholder="Enter player name (e.g., Patrick Mahomes)"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              disabled={isSaving}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="deploymentUsage">Number of Times Used in Deployment</label>
+            <input
+              id="deploymentUsage"
+              type="number"
+              placeholder="Enter number of times used"
+              value={deploymentUsage}
+              onChange={(e) => setDeploymentUsage(e.target.value)}
+              disabled={isSaving}
+              min="0"
+            />
+            <span className="help-text">How many times has this player been used in a deployment?</span>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="moduleViews">Module Views</label>
+            <input
+              id="moduleViews"
+              type="number"
+              placeholder="Enter number of module views"
+              value={moduleViews}
+              onChange={(e) => setModuleViews(e.target.value)}
+              disabled={isSaving}
+              min="0"
+            />
+            <span className="help-text">Total number of views for this player's module</span>
+          </div>
+
+          <button type="submit" disabled={isSaving} className="submit-btn">
+            {isSaving ? 'Saving...' : 'Save Data'}
+          </button>
+        </form>
+      </div>
+
+      <style jsx>{`
+        .input-tab-container {
+          background: white;
+          border-radius: 0 0 15px 15px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          padding: 40px;
+          min-height: 500px;
+        }
+
+        .input-form-card {
+          max-width: 600px;
+          margin: 0 auto;
+        }
+
+        .input-form-card h2 {
+          color: #0a2463;
+          margin-bottom: 10px;
+          font-size: 2em;
+        }
+
+        .input-subtitle {
+          color: #6b7280;
+          margin-bottom: 30px;
+        }
+
+        .message {
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin-bottom: 20px;
+          font-weight: 500;
+        }
+
+        .message.success {
+          background: #d1fae5;
+          color: #065f46;
+          border: 1px solid #10b981;
+        }
+
+        .message.error {
+          background: #fecaca;
+          color: #991b1b;
+          border: 1px solid #dc2626;
+        }
+
+        .input-form {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        .form-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+
+        .form-group label {
+          color: #0a2463;
+          font-weight: 600;
+          font-size: 0.95em;
+        }
+
+        .form-group input {
+          padding: 12px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 1em;
+          transition: border-color 0.2s;
+        }
+
+        .form-group input:focus {
+          outline: none;
+          border-color: #0a2463;
+        }
+
+        .form-group input:disabled {
+          background: #f9fafb;
+          cursor: not-allowed;
+        }
+
+        .help-text {
+          color: #6b7280;
+          font-size: 0.85em;
+          font-style: italic;
+        }
+
+        .submit-btn {
+          padding: 14px 28px;
+          background: #0a2463;
+          color: white;
+          border: none;
+          border-radius: 8px;
+          font-weight: bold;
+          font-size: 1em;
+          cursor: pointer;
+          transition: background 0.2s;
+          margin-top: 10px;
+        }
+
+        .submit-btn:hover:not(:disabled) {
+          background: #1e40af;
+        }
+
+        .submit-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        @media (max-width: 768px) {
+          .input-tab-container {
+            padding: 20px;
+          }
+
+          .input-form-card h2 {
+            font-size: 1.5em;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
 

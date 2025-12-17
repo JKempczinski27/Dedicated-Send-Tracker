@@ -21,7 +21,9 @@ class PostgresWatchlistManager {
                 added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 last_checked TIMESTAMP,
                 cached_data JSONB,
-                deployment_date DATE
+                deployment_date DATE,
+                deployment_usage INTEGER,
+                module_views INTEGER
             );
 
             CREATE INDEX IF NOT EXISTS idx_player_name ON watchlist_players(name);
@@ -29,6 +31,12 @@ class PostgresWatchlistManager {
 
         try {
             await this.pool.query(createTableQuery);
+            // Add new columns if they don't exist (for existing databases)
+            await this.pool.query(`
+                ALTER TABLE watchlist_players
+                ADD COLUMN IF NOT EXISTS deployment_usage INTEGER,
+                ADD COLUMN IF NOT EXISTS module_views INTEGER;
+            `);
         } catch (error) {
             console.error('Error initializing database:', error.message);
         }
@@ -107,6 +115,24 @@ class PostgresWatchlistManager {
         }
     }
 
+    // Update player analytics data
+    async updateAnalytics(playerName, deploymentUsage, moduleViews) {
+        try {
+            const query = `
+                UPDATE watchlist_players
+                SET deployment_usage = $1, module_views = $2
+                WHERE name = $3
+                RETURNING *
+            `;
+
+            const result = await this.pool.query(query, [deploymentUsage, moduleViews, playerName]);
+            return { success: result.rowCount > 0, message: result.rowCount > 0 ? 'Analytics updated successfully' : 'Player not found' };
+        } catch (error) {
+            console.error('Error updating analytics:', error);
+            return { success: false, message: 'Error updating analytics' };
+        }
+    }
+
     // Get all players
     async getPlayers() {
         try {
@@ -120,6 +146,8 @@ class PostgresWatchlistManager {
                 addedAt: row.added_at.toISOString(),
                 lastChecked: row.last_checked ? row.last_checked.toISOString() : null,
                 deploymentDate: row.deployment_date ? row.deployment_date.toISOString().split('T')[0] : null,
+                deploymentUsage: row.deployment_usage,
+                moduleViews: row.module_views,
                 cachedData: row.cached_data
             }));
         } catch (error) {
@@ -146,6 +174,8 @@ class PostgresWatchlistManager {
                 addedAt: row.added_at.toISOString(),
                 lastChecked: row.last_checked ? row.last_checked.toISOString() : null,
                 deploymentDate: row.deployment_date ? row.deployment_date.toISOString().split('T')[0] : null,
+                deploymentUsage: row.deployment_usage,
+                moduleViews: row.module_views,
                 cachedData: row.cached_data
             };
         } catch (error) {
