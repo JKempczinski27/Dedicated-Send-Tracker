@@ -194,6 +194,12 @@ export default function Home() {
             >
               Input
             </button>
+            <button
+              className={`tab ${activeTab === 'reddit' ? 'active' : ''}`}
+              onClick={() => setActiveTab('reddit')}
+            >
+              Reddit
+            </button>
           </div>
         </div>
 
@@ -238,6 +244,11 @@ export default function Home() {
         {/* Input Tab Content */}
         {activeTab === 'input' && (
           <InputTabContent />
+        )}
+
+        {/* Reddit Tab Content */}
+        {activeTab === 'reddit' && (
+          <RedditTabContent watchlist={watchlist} />
         )}
       </div>
 
@@ -517,6 +528,354 @@ export default function Home() {
         }
       `}</style>
     </>
+  );
+}
+
+function RedditTabContent({ watchlist }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedSubreddit, setSelectedSubreddit] = useState('all');
+  const [sortBy, setSortBy] = useState('recent');
+
+  // Collect all Reddit posts from all players
+  const allRedditPosts = watchlist.flatMap(player => {
+    const redditData = player.cachedData?.reddit || [];
+    return redditData.map(post => ({
+      ...post,
+      playerName: player.name
+    }));
+  });
+
+  // Filter posts
+  let filteredPosts = allRedditPosts.filter(post => {
+    const matchesSearch = searchTerm === '' ||
+      post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      post.playerName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSubreddit = selectedSubreddit === 'all' || post.subreddit === selectedSubreddit;
+    return matchesSearch && matchesSubreddit;
+  });
+
+  // Sort posts
+  if (sortBy === 'recent') {
+    filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  } else if (sortBy === 'score') {
+    filteredPosts.sort((a, b) => b.score - a.score);
+  } else if (sortBy === 'comments') {
+    filteredPosts.sort((a, b) => b.numComments - a.numComments);
+  }
+
+  // Get unique subreddits
+  const subreddits = ['all', ...new Set(allRedditPosts.map(post => post.subreddit))].sort();
+
+  const formatTimeAgo = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+
+    if (diffDays > 0) return `${diffDays}d ago`;
+    if (diffHours > 0) return `${diffHours}h ago`;
+    return 'Just now';
+  };
+
+  return (
+    <div className="reddit-tab-container">
+      <div className="reddit-header">
+        <h2>Reddit Results</h2>
+        <p className="reddit-subtitle">
+          {allRedditPosts.length} posts found across {watchlist.length} player{watchlist.length !== 1 ? 's' : ''}
+        </p>
+      </div>
+
+      {/* Filters */}
+      <div className="reddit-filters">
+        <div className="filter-group">
+          <input
+            type="text"
+            placeholder="Search posts or players..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
+          />
+        </div>
+
+        <div className="filter-group">
+          <select
+            value={selectedSubreddit}
+            onChange={(e) => setSelectedSubreddit(e.target.value)}
+            className="filter-select"
+          >
+            {subreddits.map(sub => (
+              <option key={sub} value={sub}>
+                {sub === 'all' ? 'All Subreddits' : `r/${sub}`}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="filter-select"
+          >
+            <option value="recent">Most Recent</option>
+            <option value="score">Highest Score</option>
+            <option value="comments">Most Comments</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Posts List */}
+      {filteredPosts.length === 0 ? (
+        <div className="no-results">
+          <p>No Reddit posts found. Try updating your player data or adjusting your filters.</p>
+        </div>
+      ) : (
+        <div className="reddit-posts-list">
+          {filteredPosts.map((post, idx) => (
+            <div key={idx} className="reddit-post-card">
+              <div className="post-header">
+                <div className="post-meta">
+                  <span className="subreddit-badge">r/{post.subreddit}</span>
+                  {post.flair && <span className="flair-badge">{post.flair}</span>}
+                  <span className="player-tag">{post.playerName}</span>
+                </div>
+                <span className="post-time">{formatTimeAgo(post.createdAt)}</span>
+              </div>
+
+              <h3 className="post-title">
+                <a href={post.url} target="_blank" rel="noopener noreferrer">
+                  {post.title}
+                </a>
+              </h3>
+
+              {post.selfText && (
+                <p className="post-excerpt">{post.selfText}</p>
+              )}
+
+              <div className="post-footer">
+                <div className="post-stats">
+                  <span className="stat-item">
+                    <span className="stat-icon">⬆️</span> {post.score}
+                  </span>
+                  <span className="stat-item">
+                    <span className="stat-icon">💬</span> {post.numComments}
+                  </span>
+                  <span className="stat-item">
+                    <span className="stat-icon">👤</span> u/{post.author}
+                  </span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <style jsx>{`
+        .reddit-tab-container {
+          background: white;
+          border-radius: 0 0 15px 15px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+          padding: 40px;
+          min-height: 500px;
+        }
+
+        .reddit-header {
+          margin-bottom: 30px;
+        }
+
+        .reddit-header h2 {
+          color: #0a2463;
+          margin-bottom: 10px;
+          font-size: 2em;
+        }
+
+        .reddit-subtitle {
+          color: #6b7280;
+          font-size: 1em;
+        }
+
+        .reddit-filters {
+          display: flex;
+          gap: 15px;
+          margin-bottom: 30px;
+          flex-wrap: wrap;
+        }
+
+        .filter-group {
+          flex: 1;
+          min-width: 200px;
+        }
+
+        .search-input, .filter-select {
+          width: 100%;
+          padding: 12px 16px;
+          border: 2px solid #e5e7eb;
+          border-radius: 8px;
+          font-size: 1em;
+          transition: border-color 0.2s;
+        }
+
+        .search-input:focus, .filter-select:focus {
+          outline: none;
+          border-color: #0a2463;
+        }
+
+        .filter-select {
+          background: white;
+          cursor: pointer;
+        }
+
+        .no-results {
+          text-align: center;
+          padding: 60px 20px;
+          color: #6b7280;
+        }
+
+        .reddit-posts-list {
+          display: flex;
+          flex-direction: column;
+          gap: 20px;
+        }
+
+        .reddit-post-card {
+          background: #f9fafb;
+          border: 1px solid #e5e7eb;
+          border-left: 4px solid #FF4500;
+          border-radius: 8px;
+          padding: 20px;
+          transition: all 0.2s;
+        }
+
+        .reddit-post-card:hover {
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+          transform: translateY(-2px);
+        }
+
+        .post-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          margin-bottom: 12px;
+          flex-wrap: wrap;
+          gap: 10px;
+        }
+
+        .post-meta {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+        }
+
+        .subreddit-badge {
+          background: #FF4500;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.85em;
+          font-weight: 600;
+        }
+
+        .flair-badge {
+          background: #0a2463;
+          color: white;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.85em;
+          font-weight: 500;
+        }
+
+        .player-tag {
+          background: #dbeafe;
+          color: #1e40af;
+          padding: 4px 10px;
+          border-radius: 12px;
+          font-size: 0.85em;
+          font-weight: 600;
+        }
+
+        .post-time {
+          color: #6b7280;
+          font-size: 0.85em;
+        }
+
+        .post-title {
+          margin: 0 0 12px 0;
+          font-size: 1.1em;
+          line-height: 1.4;
+        }
+
+        .post-title a {
+          color: #0a2463;
+          text-decoration: none;
+          font-weight: 600;
+        }
+
+        .post-title a:hover {
+          text-decoration: underline;
+          color: #1e40af;
+        }
+
+        .post-excerpt {
+          color: #4b5563;
+          font-size: 0.9em;
+          line-height: 1.5;
+          margin: 0 0 12px 0;
+        }
+
+        .post-footer {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        }
+
+        .post-stats {
+          display: flex;
+          gap: 20px;
+        }
+
+        .stat-item {
+          color: #6b7280;
+          font-size: 0.9em;
+          font-weight: 500;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+        }
+
+        .stat-icon {
+          font-size: 1em;
+        }
+
+        @media (max-width: 768px) {
+          .reddit-tab-container {
+            padding: 20px;
+          }
+
+          .reddit-header h2 {
+            font-size: 1.5em;
+          }
+
+          .reddit-filters {
+            flex-direction: column;
+          }
+
+          .filter-group {
+            min-width: 100%;
+          }
+
+          .reddit-post-card {
+            padding: 15px;
+          }
+
+          .post-stats {
+            flex-wrap: wrap;
+            gap: 10px;
+          }
+        }
+      `}</style>
+    </div>
   );
 }
 
