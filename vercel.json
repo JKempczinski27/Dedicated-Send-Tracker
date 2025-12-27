@@ -4,5 +4,15 @@
   "devCommand": "npm run dev",
   "installCommand": "npm install",
   "framework": "nextjs",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/cron/sync-rosters",
+      "schedule": "0 3 * * *"
+    },
+    {
+      "path": "/api/cron/process-sentiment",
+      "schedule": "*/15 * * * *"
+    }
+  ]
 }
