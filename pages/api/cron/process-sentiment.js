@@ -4,15 +4,16 @@ const SentimentBatchProcessor = require('../../../sentiment-batch-processor');
 /**
  * Cron Job: Process Sentiment Batch
  *
- * This endpoint is called by Vercel Cron every 10-15 minutes
- * It processes a small batch of players (10-20) for sentiment analysis
+ * This endpoint is called by Vercel Cron once daily (Hobby plan limitation)
+ * It processes a larger batch of players (75) for sentiment analysis
  *
  * The "Smart Queue" prioritization ensures:
  * - High-priority players (QB/RB/WR) get analyzed more frequently
  * - Breaking news players get immediate attention
  * - All players eventually get analyzed (staleness detection)
  *
- * Schedule: Every 15 minutes
+ * Schedule: Daily at 4:00 AM (after roster sync at 3:00 AM)
+ * Full Coverage: ~23 days for all 1,700 players
  */
 export default async function handler(req, res) {
   // Verify this is a cron request
@@ -32,7 +33,7 @@ export default async function handler(req, res) {
   try {
     // Step 1: Get next batch of players to process (smart priority queue)
     console.log('\n🎯 Step 1: Fetching next batch from smart queue...');
-    const batchSize = 15; // Process 15 players per run (to stay within rate limits)
+    const batchSize = 75; // Process 75 players per run (daily on Hobby plan)
     const players = await leaderboard.getNextBatch(batchSize);
 
     if (players.length === 0) {

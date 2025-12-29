@@ -4,6 +4,19 @@
 
 The **League-Wide Sentiment Leaderboard** is a major new feature that automatically tracks sentiment for **ALL active NFL players** (approximately 1,700 players) and displays the top performers in a real-time dashboard.
 
+## ⚠️ Vercel Plan Compatibility
+
+This feature is configured for **Vercel Hobby (Free) Plan** which allows only daily cron jobs.
+
+| Vercel Plan | Cron Frequency | Batch Size | Daily Coverage | Full Coverage |
+|-------------|---------------|------------|----------------|---------------|
+| **Hobby (Free)** | Once daily | 75 players | 75 players/day | ~23 days |
+| **Pro** | Every 15 min | 15 players | ~1,440 players/day | 1-2 days |
+
+**Current Configuration:** Hobby Plan (daily processing at 4:00 AM)
+
+To upgrade to faster processing, upgrade to Vercel Pro and change the cron schedule in `vercel.json`.
+
 ## Features
 
 ### 1. **Automatic Roster Sync**
@@ -32,7 +45,8 @@ The system uses an intelligent priority system to manage rate-limited sentiment 
 - Never-analyzed players (highest priority)
 
 ### 3. **Batch Processing**
-- Processes 15 players every 15 minutes (via Vercel Cron)
+- **Hobby Plan:** Processes 75 players once daily at 4:00 AM
+- **Pro Plan:** Can process 15 players every 15 minutes (96 batches/day)
 - Respects NewsAPI rate limits (100 requests/hour on free tier)
 - Graceful error handling for failed requests
 
@@ -86,9 +100,9 @@ Manages processing queue:
 │             └─> LeaderboardManager.syncPlayers()                │
 │                 └─> Queue high-priority players                 │
 │                                                                   │
-│  2. Sentiment Processing (Every 15 minutes)                     │
+│  2. Sentiment Processing (Daily at 4:00 AM - Hobby Plan)       │
 │     └─> /api/cron/process-sentiment                             │
-│         └─> LeaderboardManager.getNextBatch(15)                 │
+│         └─> LeaderboardManager.getNextBatch(75)                 │
 │             └─> SentimentBatchProcessor.processBatch()          │
 │                 └─> NewsTracker.searchNews() (rate-limited)     │
 │                     └─> LeaderboardManager.updateSentiment()    │
@@ -183,20 +197,21 @@ Added to `vercel.json`:
 
 **Schedule Explanation:**
 - Roster sync: Daily at 3:00 AM ET
-- Sentiment processing: Every 15 minutes
+- Sentiment processing: Daily at 4:00 AM ET (Hobby plan)
 
 ## Rate Limit Management
 
 The system is designed to work within NewsAPI free tier limits:
 
 - **NewsAPI Free Tier:** 100 requests/hour
-- **Our Usage:** 15 players × 4 times/hour = 60 requests/hour
-- **Headroom:** 40 requests (66% utilization)
+- **Hobby Plan Usage:** 75 players once per day (well within limits)
+- **Pro Plan Usage:** 15 players × 4 times/hour = 60 requests/hour
 
-This means:
-- We can process ~900 unique players per day
-- High-priority players get analyzed multiple times
-- All 1,700 players will eventually be analyzed
+**Hobby Plan Timeline:**
+- Day 1: 75 high-priority players (QB/RB/WR starters)
+- Week 1: ~525 players analyzed
+- Month 1: Full coverage of all 1,700 players
+- Ongoing: High-priority players re-analyzed more frequently
 
 ## How to Deploy
 
@@ -218,9 +233,10 @@ This means:
    - Check database for populated tables
 
 4. **Initial Setup:**
-   - First roster sync will populate all_players table
-   - Sentiment processing will start automatically
-   - Leaderboard will populate within 1-2 hours
+   - First roster sync runs at 3:00 AM (next morning after deploy)
+   - Sentiment processing runs at 4:00 AM
+   - Leaderboard will show first data the next morning
+   - **Tip:** Manually trigger cron jobs in Vercel dashboard to test immediately
 
 ## Monitoring
 
@@ -251,12 +267,12 @@ LIMIT 10;
 ## Troubleshooting
 
 ### Issue: Leaderboard shows "No Data"
-- **Cause:** Cron jobs haven't run yet or NewsAPI key missing
-- **Solution:** Wait 15-30 minutes after first deploy, check Vercel logs
+- **Cause:** Cron jobs haven't run yet (runs at 3-4 AM) or NewsAPI key missing
+- **Solution:** Wait until next morning, or manually trigger cron in Vercel dashboard
 
 ### Issue: Only a few players analyzed
-- **Cause:** NewsAPI rate limits or insufficient time
-- **Solution:** Normal behavior, full coverage takes 24-48 hours
+- **Cause:** Normal on Hobby plan - processes 75 players per day
+- **Solution:** Expected behavior, full coverage takes ~23 days. High-priority players appear first.
 
 ### Issue: Cron job 401 Unauthorized
 - **Cause:** CRON_SECRET not set or incorrect
