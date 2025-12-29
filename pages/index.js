@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
+import SentimentLeaderboard from '../components/SentimentLeaderboard';
 
 export default function Home() {
   const [watchlist, setWatchlist] = useState([]);
@@ -189,6 +190,12 @@ export default function Home() {
               Dashboard
             </button>
             <button
+              className={`tab ${activeTab === 'leaderboard' ? 'active' : ''}`}
+              onClick={() => setActiveTab('leaderboard')}
+            >
+              Leaderboard
+            </button>
+            <button
               className={`tab ${activeTab === 'input' ? 'active' : ''}`}
               onClick={() => setActiveTab('input')}
             >
@@ -234,6 +241,11 @@ export default function Home() {
             </table>
           </div>
         ))}
+
+        {/* Leaderboard Tab Content */}
+        {activeTab === 'leaderboard' && (
+          <SentimentLeaderboard />
+        )}
 
         {/* Input Tab Content */}
         {activeTab === 'input' && (
