@@ -36,25 +36,27 @@ ENV NODE_ENV=production
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
-# Copy Next.js build output
-COPY --from=builder /app/public ./public
+# Copy Next.js build output (if exists)
 COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/pages ./pages
-
-# Copy application files for custom server and cron jobs
-COPY --from=builder /app/server.js ./server.js
-COPY --from=builder /app/enhanced-tracker.js ./enhanced-tracker.js
-COPY --from=builder /app/postgres-watchlist-manager.js ./postgres-watchlist-manager.js
-COPY --from=builder /app/leaderboard-manager.js ./leaderboard-manager.js
-COPY --from=builder /app/sentiment-batch-processor.js ./sentiment-batch-processor.js
-COPY --from=builder /app/lib ./lib
 COPY --from=builder /app/next.config.js ./next.config.js
 
-# Copy any additional tracker files (only if they exist)
-COPY --from=builder --chown=nextjs:nodejs /app/*.js ./
+# Copy source directories
+COPY --from=builder /app/pages ./pages
+COPY --from=builder /app/components ./components
+COPY --from=builder /app/styles ./styles
+COPY --from=builder /app/lib ./lib
+
+# Copy public directory (create if doesn't exist)
+COPY --from=builder /app/public ./public
+
+# Copy all JavaScript files in root (tracker files, server, etc.)
+COPY --from=builder /app/*.js ./
 
 # Copy node_modules
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy package.json for reference
+COPY --from=builder /app/package.json ./package.json
 
 # Set correct permissions
 RUN chown -R nextjs:nodejs /app
