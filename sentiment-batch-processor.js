@@ -1,4 +1,6 @@
 const NewsTracker = require('./news-tracker');
+const RedditTracker = require('./reddit-tracker');
+const ForumTracker = require('./forum-tracker');
 
 /**
  * SentimentBatchProcessor - Processes sentiment analysis in controlled batches
@@ -6,6 +8,7 @@ const NewsTracker = require('./news-tracker');
  * This is the "Smart Queue" that manages rate limits while processing 1,700+ players
  * Key features:
  * - Processes players in small batches (10-20 at a time)
+ * - Aggregates sentiment from MULTIPLE sources (News, Reddit, Forums)
  * - Respects API rate limits (NewsAPI, Reddit, etc.)
  * - Gracefully handles failures
  * - Tracks processing metrics
@@ -14,6 +17,15 @@ class SentimentBatchProcessor {
     constructor() {
         this.NEWS_API_KEY = process.env.NEWS_API_KEY;
         this.newsTracker = this.NEWS_API_KEY ? new NewsTracker(this.NEWS_API_KEY) : null;
+        this.redditTracker = new RedditTracker();
+        this.forumTracker = new ForumTracker();
+
+        // Enable/disable sources
+        this.sources = {
+            news: this.newsTracker !== null,
+            reddit: true,
+            forums: true  // Set to false to disable forum scraping
+        };
 
         // Rate limiting configuration
         this.rateLimit = {
@@ -112,49 +124,111 @@ class SentimentBatchProcessor {
 
     /**
      * Analyze sentiment for a single player
-     * Uses NewsAPI (primary source) with fallback logic
+     * AGGREGATES from multiple sources: News, Reddit, Forums
      */
     async analyzePlayerSentiment(player) {
-        // If no NewsAPI key, return empty data
-        if (!this.newsTracker) {
-            return this.createEmptySentimentData();
-        }
+        const sourcesData = {
+            news: null,
+            reddit: null,
+            forums: null
+        };
+
+        let totalArticles = 0;
+        let weightedScoreSum = 0;
+        let totalWeight = 0;
 
         try {
-            // Search for news about the player (last 7 days)
-            const newsData = await this.newsTracker.searchNews(player.name);
+            // 1. NEWS DATA (highest weight: 50%)
+            if (this.sources.news) {
+                try {
+                    const newsData = await this.newsTracker.searchNews(player.name);
+                    if (newsData && newsData.articles && newsData.articles.length > 0) {
+                        sourcesData.news = newsData.analysis;
+                        totalArticles += newsData.articles.length;
 
-            // If no articles found, return empty
-            if (!newsData || !newsData.articles || newsData.articles.length === 0) {
-                console.log(`    ℹ️  No recent news found`);
+                        const newsWeight = 0.5;
+                        weightedScoreSum += newsData.analysis.overallSentiment.score * newsWeight;
+                        totalWeight += newsWeight;
+
+                        console.log(`    📰 News: ${newsData.analysis.overallSentiment.score} (${newsData.articles.length} articles)`);
+                    }
+                } catch (error) {
+                    console.log(`    ⚠️  News fetch failed: ${error.message}`);
+                }
+            }
+
+            // 2. REDDIT DATA (medium weight: 30%)
+            if (this.sources.reddit) {
+                try {
+                    const redditPosts = await this.redditTracker.searchReddit(player.name, 'nfl', 10);
+                    if (redditPosts && redditPosts.length > 0) {
+                        // Calculate Reddit sentiment from post titles + scores
+                        const redditSentiment = this.calculateRedditSentiment(redditPosts);
+                        sourcesData.reddit = redditSentiment;
+                        totalArticles += redditPosts.length;
+
+                        const redditWeight = 0.3;
+                        weightedScoreSum += redditSentiment.score * redditWeight;
+                        totalWeight += redditWeight;
+
+                        console.log(`    💬 Reddit: ${redditSentiment.score.toFixed(2)} (${redditPosts.length} posts)`);
+                    }
+                } catch (error) {
+                    console.log(`    ⚠️  Reddit fetch failed: ${error.message}`);
+                }
+            }
+
+            // 3. FORUM DATA (lower weight: 20%)
+            if (this.sources.forums) {
+                try {
+                    const forumData = await this.forumTracker.searchForums(player.name, 15);
+                    if (forumData && forumData.totalMentions > 0) {
+                        sourcesData.forums = forumData.sentiment;
+                        totalArticles += forumData.totalMentions;
+
+                        const forumWeight = 0.2;
+                        weightedScoreSum += forumData.sentiment.score * forumWeight;
+                        totalWeight += forumWeight;
+
+                        console.log(`    🗣️  Forums: ${forumData.sentiment.score.toFixed(2)} (${forumData.totalMentions} posts)`);
+                    }
+                } catch (error) {
+                    console.log(`    ⚠️  Forum fetch failed: ${error.message}`);
+                }
+            }
+
+            // No data from any source
+            if (totalArticles === 0) {
+                console.log(`    ℹ️  No data from any source`);
                 return this.createEmptySentimentData();
             }
 
-            // Extract sentiment data
-            const analysis = newsData.analysis;
-            const articles = newsData.articles;
+            // Calculate weighted average sentiment
+            const overallScore = totalWeight > 0 ? weightedScoreSum / totalWeight : 0;
 
-            // Check for breaking injury news
-            const hasBreakingNews = this.detectBreakingNews(articles);
+            // Check for breaking news (from news articles)
+            const hasBreakingNews = sourcesData.news
+                ? this.detectBreakingNews(sourcesData.news)
+                : false;
 
-            console.log(`    📊 Sentiment: ${analysis.overallSentiment.score} (${articles.length} articles)`);
+            console.log(`    📊 OVERALL: ${overallScore.toFixed(2)} (${totalArticles} total items)`);
 
             return {
-                overallScore: analysis.overallSentiment.score,
-                articleCount: analysis.total,
-                positiveCount: analysis.breakdown.positive.count || 0,
-                neutralCount: analysis.breakdown.neutral.count || 0,
-                negativeCount: analysis.breakdown.negative.count || 0,
+                overallScore: overallScore,
+                articleCount: totalArticles,
+                positiveCount: this.countPositive(sourcesData),
+                neutralCount: this.countNeutral(sourcesData),
+                negativeCount: this.countNegative(sourcesData),
                 hasBreakingNews: hasBreakingNews,
                 rawData: {
-                    overallSentiment: analysis.overallSentiment,
-                    breakdown: analysis.breakdown,
-                    topArticles: articles.slice(0, 3).map(a => ({
-                        title: a.title,
-                        source: a.source,
-                        sentiment: a.sentiment,
-                        publishedAt: a.publishedAt
-                    }))
+                    aggregated: {
+                        sources: Object.keys(sourcesData).filter(k => sourcesData[k] !== null),
+                        totalItems: totalArticles,
+                        overallScore: overallScore
+                    },
+                    news: sourcesData.news,
+                    reddit: sourcesData.reddit,
+                    forums: sourcesData.forums
                 }
             };
 
@@ -162,6 +236,68 @@ class SentimentBatchProcessor {
             console.error(`    ⚠️  Error analyzing sentiment:`, error.message);
             throw error;
         }
+    }
+
+    /**
+     * Calculate sentiment from Reddit posts
+     */
+    calculateRedditSentiment(posts) {
+        const Sentiment = require('sentiment');
+        const sentiment = new Sentiment();
+
+        let totalScore = 0;
+        let positive = 0;
+        let negative = 0;
+        let neutral = 0;
+
+        posts.forEach(post => {
+            const analysis = sentiment.analyze(post.title);
+            totalScore += analysis.score;
+
+            if (analysis.score > 0) positive++;
+            else if (analysis.score < 0) negative++;
+            else neutral++;
+        });
+
+        return {
+            score: posts.length > 0 ? totalScore / posts.length : 0,
+            positive,
+            negative,
+            neutral
+        };
+    }
+
+    /**
+     * Count positive mentions across all sources
+     */
+    countPositive(sourcesData) {
+        let count = 0;
+        if (sourcesData.news) count += sourcesData.news.breakdown?.positive?.count || 0;
+        if (sourcesData.reddit) count += sourcesData.reddit.positive || 0;
+        if (sourcesData.forums) count += sourcesData.forums.positive || 0;
+        return count;
+    }
+
+    /**
+     * Count neutral mentions across all sources
+     */
+    countNeutral(sourcesData) {
+        let count = 0;
+        if (sourcesData.news) count += sourcesData.news.breakdown?.neutral?.count || 0;
+        if (sourcesData.reddit) count += sourcesData.reddit.neutral || 0;
+        if (sourcesData.forums) count += sourcesData.forums.neutral || 0;
+        return count;
+    }
+
+    /**
+     * Count negative mentions across all sources
+     */
+    countNegative(sourcesData) {
+        let count = 0;
+        if (sourcesData.news) count += sourcesData.news.breakdown?.negative?.count || 0;
+        if (sourcesData.reddit) count += sourcesData.reddit.negative || 0;
+        if (sourcesData.forums) count += sourcesData.forums.negative || 0;
+        return count;
     }
 
     /**
